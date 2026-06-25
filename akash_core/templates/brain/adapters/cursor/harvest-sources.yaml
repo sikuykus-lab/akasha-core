@@ -1,0 +1,8 @@
+globs:
+  - "~/.cursor/skills/**/SKILL.md"
+  - ".cursor/rules/*"
+  - ".cursor/mcp.json"
+  - "**/SOUL.md"
+  - "**/USER.md"
+  - "**/MEMORY.md"
+  - "**/AGENTS.md"

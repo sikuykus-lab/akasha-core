@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +13,7 @@ from .config import Config
 
 
 MANIFEST_NAME = "manifest.yaml"
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates" / "brain"
 
 
 @dataclass
@@ -23,6 +25,24 @@ class Manifest:
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _copy_tree_if_missing(src: Path, dst: Path) -> None:
+    """Копирует шаблоны brain только если целевого файла/каталога ещё нет."""
+    if not src.exists():
+        return
+    if src.is_dir():
+        for item in src.rglob("*"):
+            rel = item.relative_to(src)
+            target = dst / rel
+            if item.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+            elif not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, target)
+    elif not dst.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
 
 
 def init_brain(path: Path) -> None:
@@ -80,14 +100,25 @@ def init_brain(path: Path) -> None:
     if not ineffective.exists():
         ineffective.write_text("# INEFFECTIVE patterns\n", encoding="utf-8")
 
+    # Шаблоны skills/adapters из пакета (§3.2, §5, §9) — brain не бывает «пустой ссылкой».
+    if TEMPLATES_DIR.exists():
+        _copy_tree_if_missing(TEMPLATES_DIR / "skills", path / "skills")
+        _copy_tree_if_missing(TEMPLATES_DIR / "adapters", path / "adapters")
+
     akasha_bootstrap = path / "skills" / "akasha-bootstrap" / "SKILL.md"
-    akasha_bootstrap.parent.mkdir(parents=True, exist_ok=True)
     if not akasha_bootstrap.exists():
+        akasha_bootstrap.parent.mkdir(parents=True, exist_ok=True)
         akasha_bootstrap.write_text(
             "# akasha-bootstrap\n\n"
-            "Первый skill, который читает агрегатор при bootstrap (§12 AKASHA-TZ).\n",
+            "Первый skill при bootstrap. Полный чеклист:\n"
+            "https://github.com/sikuykus-lab/akasha-core/blob/main/docs/AGENT-ONBOARDING.ru.md\n",
             encoding="utf-8",
         )
+
+    for name in ("links.jsonl", "usage.jsonl"):
+        state_file = path / "state" / name
+        if not state_file.exists():
+            state_file.write_text("", encoding="utf-8")
 
 
 def migrate_brain(path: Path) -> None:

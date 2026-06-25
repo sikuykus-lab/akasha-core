@@ -1,0 +1,9 @@
+agent_id: cursor
+transport: mcp
+backend: github
+scope: project
+
+inject_paths:
+  rules: .cursor/rules/
+  hooks: .cursor/hooks.json
+  mcp: .cursor/mcp.json

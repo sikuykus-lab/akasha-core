@@ -11,6 +11,21 @@ AKASHA Core (`akasha-core`)
 
 - `AKASHA-TZ v1.8` (копия в рабочем репозитории пользователя, например `Google Sheets/akash/AKASHA-TZ.md`).
 
+## Для пользователя: одна фраза в чат
+
+Если на устройстве подключён GitHub (`gh auth login` или SSH), напишите агрегатору (Cursor, Claude Code и т.д.):
+
+> **Настрой себя по данному проекту GitHub:** `https://github.com/ВАШ_USER/akash-brain`
+
+ИИ **сам** выполнит bootstrap по чеклисту `docs/AGENT-ONBOARDING.ru.md`: установит `akash`, сделает `adopt`, соберёт rules/hooks, запустит harvest и `sync`. Вам не нужно вручную настраивать MCP и пути.
+
+Переводы чеклиста для ИИ:
+
+- `docs/AGENT-ONBOARDING.ru.md`
+- `docs/AGENT-ONBOARDING.en.md`
+- `docs/AGENT-ONBOARDING.es.md`
+- `docs/AGENT-ONBOARDING.zh.md`
+
 Переводы README:
 
 - `README.en.md` — английская версия;

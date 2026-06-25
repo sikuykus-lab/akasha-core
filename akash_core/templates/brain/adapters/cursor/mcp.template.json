@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "akash": {
+      "command": "akash",
+      "args": ["mcp-serve"],
+      "env": {}
+    }
+  }
+}

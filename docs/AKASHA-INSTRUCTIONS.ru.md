@@ -22,17 +22,17 @@ pip install git+https://github.com/sikuykus-lab/akasha-core.git
 
    - `https://github.com/<user>/akash-brain`
 
-2. На машине/в агрегаторе, где установлен `akasha-core`, выполните bootstrap:
+2. На машине/в агрегаторе напишите **одну фразу** (GitHub уже подключён):
 
-   - В терминале:
+   > **Настрой себя по данному проекту GitHub:** `https://github.com/<user>/akash-brain`
 
-     ```bash
-     akash adopt https://github.com/<user>/akash-brain --agent cursor
-     ```
+   ИИ выполнит полный bootstrap по `docs/AGENT-ONBOARDING.ru.md` без ручной настройки.
 
-   - Или фразой в чате агрегатору (Cursor, Claude Code и т.п.):
+   Альтернатива в терминале:
 
-     > Настрой себя по данному проекту GitHub: `https://github.com/<user>/akash-brain`
+   ```bash
+   akash adopt https://github.com/<user>/akash-brain --agent cursor
+   ```
 
 3. После bootstrap:
 
