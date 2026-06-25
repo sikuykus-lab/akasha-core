@@ -8,10 +8,13 @@ from typing import Any
 
 import yaml
 
+from .nav_tokens import base_tokenize as _tokenize, expand_task_tokens
 from .skill_laws import TRIGGER_HEADERS, _extract_after_header
 
 MIN_CUBE_SCORE = 3.0
-MAX_CUBES = 8
+MIN_RESCUE_SCORE = 2.0
+MAX_CUBES = 5
+MAX_SUPPORT = 2
 MARGINAL_RATIO = 0.35
 
 PATH_HEADERS = ("## paths", "## пути")
@@ -28,10 +31,6 @@ class CubeMeta:
     triggers: list[str]
     entrypoints: list[str]
     role: str = "candidate"
-
-
-def _tokenize(text: str) -> set[str]:
-    return {w.lower() for w in re.findall(r"[a-zA-Zа-яА-ЯёЁ0-9]+", text) if len(w) > 2}
 
 
 def _skill_md_path(brain_path: Path, skill_id: str) -> Path:
@@ -86,6 +85,50 @@ def parse_skill_md(content: str) -> dict[str, list[str]]:
     return {"triggers": triggers, "paths": paths, "entrypoints": entrypoints}
 
 
+def parse_skill_md_blocks(content: str) -> list[dict[str, Any]]:
+    """Merged harvest: отдельный блок на каждый [harvest-synth:path]."""
+    if "[harvest-synth:" not in content:
+        return [parse_skill_md(content)]
+
+    blocks: list[dict[str, Any]] = []
+    first = parse_skill_md(content.split("[harvest-synth:")[0])
+    if first.get("paths") or first.get("entrypoints"):
+        blocks.append(first)
+
+    for m in re.finditer(
+        r"\[harvest-synth:([^\]]+)\]\s*\n+# ([^\n]+)\s*\n([\s\S]*?)(?=\n\[harvest-synth:|\Z)",
+        content,
+    ):
+        source_path, _title, body = m.group(1), m.group(2), m.group(3)
+        meta = parse_skill_md("# " + _title + "\n" + body)
+        meta["source_path"] = source_path.strip()
+        if not meta.get("paths"):
+            meta["paths"] = [Path(source_path).name]
+        blocks.append(meta)
+    return blocks or [parse_skill_md(content)]
+
+
+def best_meta_for_task(content: str, task: str) -> dict[str, Any]:
+    """Entrypoints/paths из блока SKILL.md, лучше всего совпадающего с задачей."""
+    blocks = parse_skill_md_blocks(content)
+    if len(blocks) == 1:
+        return blocks[0]
+    expanded = expand_task_tokens(task)
+    best, best_score = blocks[0], 0.0
+    for b in blocks:
+        s = 0.0
+        for p in b.get("paths") or []:
+            s += len(expanded & _tokenize(Path(str(p)).stem)) * 12.0
+        sp = b.get("source_path") or ""
+        if sp:
+            s += len(expanded & _tokenize(Path(sp).stem)) * 12.0
+        for ep in b.get("entrypoints") or []:
+            s += len(expanded & _tokenize(ep)) * 6.0
+        if s > best_score:
+            best_score, best = s, b
+    return best if best_score > 0 else blocks[0]
+
+
 def _load_links(brain_path: Path) -> dict[str, set[str]]:
     links_path = brain_path / "state" / "links.jsonl"
     graph: dict[str, set[str]] = {}
@@ -114,7 +157,7 @@ def score_cube_for_task(
     purpose: str = "",
     when_tags: list[str] | None = None,
 ) -> float:
-    task_tokens = _tokenize(task)
+    task_tokens = expand_task_tokens(task)
     if not task_tokens:
         return 0.0
 
@@ -167,7 +210,7 @@ def _rank_cubes(brain_path: Path, task: str) -> list[CubeMeta]:
         if cid in ineffective or not skill_exists(brain_path, cid):
             continue
         content = _skill_md_path(brain_path, cid).read_text(encoding="utf-8", errors="replace")
-        meta = parse_skill_md(content)
+        meta = best_meta_for_task(content, task)
         score = score_cube_for_task(
             task,
             cid,
@@ -192,17 +235,54 @@ def _rank_cubes(brain_path: Path, task: str) -> list[CubeMeta]:
 
     ranked.sort(key=lambda c: c.score, reverse=True)
     if not ranked:
-        return []
+        return _rescue_cubes(brain_path, task, ineffective)
 
     best = ranked[0].score
-    selected: list[CubeMeta] = []
-    for cube in ranked:
-        if len(selected) >= MAX_CUBES:
+    selected: list[CubeMeta] = [ranked[0]]
+    anchor_project = ranked[0].project
+    for cube in ranked[1:]:
+        if len(selected) >= 1 + MAX_SUPPORT:
             break
-        if cube.score < best * MARGINAL_RATIO and selected:
+        if cube.score < best * MARGINAL_RATIO:
             break
-        selected.append(cube)
+        if cube.project == anchor_project or cube.project.split("-")[0] == anchor_project.split("-")[0]:
+            selected.append(cube)
     return selected
+
+
+def _rescue_cubes(brain_path: Path, task: str, ineffective: set[str]) -> list[CubeMeta]:
+    """Если порог не прошли — поднять 1–2 кубика из карты с мягким порогом."""
+    from .capabilities import purpose_for_skill, when_tags_for_skill
+
+    candidates: list[CubeMeta] = []
+    for chunk in _load_chunks(brain_path):
+        cid = str(chunk["id"])
+        if cid in ineffective or not skill_exists(brain_path, cid):
+            continue
+        content = _skill_md_path(brain_path, cid).read_text(encoding="utf-8", errors="replace")
+        meta = best_meta_for_task(content, task)
+        score = score_cube_for_task(
+            task,
+            cid,
+            meta,
+            chunk,
+            purpose=purpose_for_skill(brain_path, cid),
+            when_tags=when_tags_for_skill(brain_path, cid),
+        )
+        if score >= MIN_RESCUE_SCORE:
+            candidates.append(
+                CubeMeta(
+                    id=cid,
+                    score=score,
+                    tags=list(chunk.get("tags") or []),
+                    project=str(chunk.get("project") or ""),
+                    paths=list(chunk.get("paths") or []) or meta.get("paths") or [],
+                    triggers=meta.get("triggers") or [],
+                    entrypoints=meta.get("entrypoints") or [],
+                )
+            )
+    candidates.sort(key=lambda c: c.score, reverse=True)
+    return candidates[:1 + MAX_SUPPORT]
 
 
 def _assign_roles(cubes: list[CubeMeta], links: dict[str, set[str]]) -> None:
@@ -225,8 +305,11 @@ def _build_hint(task: str, cubes: list[CubeMeta]) -> str:
         return "Готовых кубиков под задачу нет — собери решение с нуля."
     anchor = cubes[0]
     parts = [f"Якорь: `{anchor.id}`"]
-    if anchor.entrypoints:
-        parts.append("функции: " + ", ".join(f"`{e}()`" for e in anchor.entrypoints[:4]))
+    eps = anchor.entrypoints[:5]
+    if anchor.paths and not eps:
+        parts.append("paths: " + ", ".join(f"`{p}`" for p in anchor.paths[:3]))
+    if eps:
+        parts.append("функции: " + ", ".join(f"`{e}()`" for e in eps[:4]))
     if len(cubes) > 1:
         glue = [c.id for c in cubes[1:] if c.role in ("glue", "related")]
         if glue:
@@ -276,7 +359,15 @@ def weave_solution_for_task(brain_path: Path, task: str) -> dict[str, Any]:
         }
 
     best = cubes[0].score
-    confidence = "high" if best >= 8.0 else "medium" if best >= MIN_CUBE_SCORE else "low"
+    confidence = (
+        "high"
+        if best >= 8.0
+        else "medium"
+        if best >= MIN_CUBE_SCORE
+        else "low"
+        if cubes
+        else "empty"
+    )
 
     return {
         "confidence": confidence,
