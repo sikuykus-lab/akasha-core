@@ -1,0 +1,7 @@
+globs:
+  # Примеры общих источников harvest (§14.2, §14.5).
+  - "**/SOUL.md"
+  - "**/USER.md"
+  - "**/MEMORY.md"
+  - "**/AGENTS.md"
+
