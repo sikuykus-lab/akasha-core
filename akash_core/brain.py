@@ -159,22 +159,25 @@ def _write_manifest(path: Path, manifest: Manifest) -> None:
     path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
-def pull_brain(backend: Backend) -> None:
-    backend.pull()
+def pull_brain(backend: Backend, agent_id: str, *, steal: bool = False) -> None:
+    from . import session_lock as lock_mod
+
+    lock_mod.acquire(backend, agent_id, steal=steal)
 
 
-def cli_sync(backend: Backend) -> None:
+def cli_sync(backend: Backend, agent_id: str) -> None:
     """
-    `akash sync` = pull → compact → NAV → push (§4.1, §6, §10).
-
-    Здесь реализуем оболочку; compact и NAV заполнят другие модули.
+    `akash sync` = verify lock → pull → compact → NAV → release → push.
     """
     from . import session as session_mod
     from . import nav as nav_mod
+    from . import session_lock as lock_mod
 
+    lock_mod.assert_holder(backend, agent_id)
     backend.pull()
     session_mod.compact_hot_memory(backend.brain_path)
     nav_mod.recompute_nav(backend.brain_path)
+    lock_mod.release(backend, agent_id)
     backend.push()
 
 

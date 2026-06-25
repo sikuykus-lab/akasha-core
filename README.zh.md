@@ -63,7 +63,8 @@ akash sync
 | `akash init` | 在当前目录 scaffold brain |
 | `akash migrate` | 迁移 brain 至最新结构 |
 | `akash configure` | 编辑 `~/.akash/config.local` |
-| `akash pull` | 会话开始：pull + 热记忆（persona、rapport、ACTIONS） |
+| `akash pull [--steal]` | 会话开始 + **brain 锁**（单 writer） |
+| `akash session-status` | 锁持有者、TTL |
 | `akash prepare "任务"` | 为任务编织 skill pack |
 | `akash read-skill <id>` | 从当前 pack 读取 SKILL.md |
 | `akash remember "事实"` | 会话缓冲记录事实 |
@@ -78,6 +79,15 @@ akash sync
 | `akash status` | brain_version、backend、scope |
 
 MCP 工具（若启用）与上述操作一一对应。
+
+## 并行智能体
+
+同一时间只有 **一个会话** 可写入 brain：
+
+1. **本机** — `~/.akash/locks/` 文件锁（同一 Mac 上多个 Cursor 聊天）。
+2. **跨机器** — brain 内 `state/session_lock.json`（`pull` 时 push）。
+
+第二个智能体在 `pull` / `sync` / `harvest` 时会失败。锁僵死：TTL 过后（10 分钟，`prepare` / `remember` 续期）使用 `akash pull --steal`。
 
 ## 会话生命周期
 

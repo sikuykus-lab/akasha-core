@@ -63,7 +63,8 @@ akash sync
 | `akash init` | Scaffold brain в текущем каталоге |
 | `akash migrate` | Миграция brain к актуальной схеме |
 | `akash configure` | Ручная правка `~/.akash/config.local` |
-| `akash pull` | Старт сессии: pull + hot-память (persona, rapport, ACTIONS) |
+| `akash pull [--steal]` | Старт сессии + **блокировка brain** (один writer) |
+| `akash session-status` | Кто держит lock, TTL |
 | `akash prepare "задача"` | Собрать pack skills под задачу |
 | `akash read-skill <id>` | Прочитать SKILL.md из текущего pack |
 | `akash remember "факт"` | Записать факт в буфер сессии |
@@ -78,6 +79,15 @@ akash sync
 | `akash status` | brain_version, backend, scope |
 
 MCP-tools (если подключены) — зеркало тех же операций.
+
+## Параллельные агенты
+
+Одновременно **писать** в brain может только одна сессия:
+
+1. **Локально** — file lock в `~/.akash/locks/` (два чата Cursor на одном Mac).
+2. **Между машинами** — `state/session_lock.json` в brain (push при `pull`).
+
+Второй агент получит отказ на `pull` / `sync` / `harvest`. Если сессия зависла: `akash pull --steal` после истечения TTL (10 мин, продлевается при `prepare` / `remember`).
 
 ## Жизненный цикл сессии
 
