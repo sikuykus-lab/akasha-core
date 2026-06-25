@@ -54,8 +54,8 @@ def cli_onboard(
         harvest_mod.run_harvest(backend, preview=True, merge=merge, project_root=project_root)
         harvest_mod.run_harvest(backend, preview=False, merge=merge, project_root=project_root)
 
-    brain_mod.pull_brain(backend)
-    brain_mod.cli_sync(backend)
+    brain_mod.pull_brain(backend, agent_id)
+    brain_mod.cli_sync(backend, agent_id)
 
     manifest = brain_mod._read_manifest(backend.brain_path / brain_mod.MANIFEST_NAME)
     skill_count = harvest_mod.count_skills(backend.brain_path)

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "/Users/user/Documents/Google Sheets/akasha-core/.cursor/hooks/akash-session-start.py"
+      }
+    ],
+    "stop": [
+      {
+        "command": "/usr/local/bin/python3 -m akash_core.cli sync"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "/Users/user/Documents/Google Sheets/akasha-core/.cursor/hooks/akash-prepare-gate.py",
+        "matcher": "Read|Write|Grep|Shell|StrReplace|Delete|EditNotebook|Task"
+      }
+    ]
+  }
+}
