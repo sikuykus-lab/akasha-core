@@ -9,6 +9,8 @@ from . import session as session_mod
 from . import nav as nav_mod
 from . import harvest as harvest_mod
 from . import upp as upp_mod
+from . import onboard as onboard_mod
+from .cli_resolve import ensure_akasha_core_installed
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -27,6 +29,18 @@ def _build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("backend-detect", help="Detect available backend(s): github and/or server.")
     subparsers.add_parser("github-status", help="Check GitHub auth status for akasha-core.")
+
+    onboard = subparsers.add_parser(
+        "onboard",
+        help="Full auto-bootstrap: install CLI, adopt, shell, harvest, sync (§3.1).",
+    )
+    onboard.add_argument("brain", help="GitHub URL of private brain repository.")
+    onboard.add_argument("--agent", dest="agent_id", default="cursor")
+    onboard.add_argument("--scope", choices=["project", "user"], default="project")
+    onboard.add_argument("--skip-harvest", action="store_true")
+
+    subparsers.add_parser("doctor", help="Diagnose CLI, config, brain, GitHub.")
+    subparsers.add_parser("ensure-cli", help="Install akasha-core if missing; write ~/.akash/cli.json.")
 
     subparsers.add_parser("init", help="Initialize a new brain repository in the current directory.")
     subparsers.add_parser("migrate", help="Migrate existing brain repository to latest manifest/layout.")
@@ -82,9 +96,26 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
+    if args.command == "ensure-cli":
+        ensure_akasha_core_installed()
+        print("akasha-core ready.")
+        return 0
+
+    if args.command == "doctor":
+        return onboard_mod.cli_doctor()
+
+    if args.command == "onboard":
+        return onboard_mod.cli_onboard(
+            brain_url=args.brain,
+            agent_id=args.agent_id,
+            scope=args.scope,
+            skip_harvest=args.skip_harvest,
+        )
+
     config = config_mod.load_config()
 
     if args.command == "adopt":
+        ensure_akasha_core_installed()
         if args.server:
             config_mod.configure_server_backend(
                 agent_id=args.agent_id,

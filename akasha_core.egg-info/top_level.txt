@@ -1,0 +1,5 @@
+adapters
+akash_core
+docs
+scripts
+tests

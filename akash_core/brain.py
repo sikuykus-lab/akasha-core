@@ -179,10 +179,18 @@ def cli_sync(backend: Backend) -> None:
 
 
 def cli_status(backend: Backend, cfg: Config) -> None:
+    from . import harvest as harvest_mod
+
     manifest = _read_manifest(backend.brain_path / MANIFEST_NAME)
-    print(f"Brain path: {backend.brain_path}")
-    print(f"Backend: {cfg.backend}")
+    skills = harvest_mod.count_skills(backend.brain_path)
+    print("=== AKASHA status ===")
     print(f"Brain version: {manifest.brain_version}")
+    print(f"Agent: {cfg.agent_id or '-'}")
+    print(f"Backend: {cfg.backend or '-'}")
+    print(f"Brain URL: {cfg.brain_url or '-'}")
+    print(f"Scope: {cfg.scope or '-'}")
+    print(f"Brain path: {backend.brain_path}")
+    print(f"Skills: {skills}")
     print(f"Supported agents: {', '.join(manifest.supported_agents) or '-'}")
 
 

@@ -16,19 +16,32 @@
 
 `agent_id` = одно из: `cursor` | `claude-code` | `hermes` | `opencode` | `_template`.
 
-### 1. Установи akasha-core (если нет команды `akash`)
+### 1. Установи akasha-core и выполни onboard (без PATH)
+
+**Не проси пользователя** ставить CLI вручную. Выполни сам:
 
 ```bash
-python3 -m pip install git+https://github.com/sikuykus-lab/akasha-core.git
+python3 -m pip install --user git+https://github.com/sikuykus-lab/akasha-core.git
+python3 -m akash_core.cli onboard <BRAIN_URL> --agent <agent_id> --scope project
 ```
 
-Проверка: `akash --help`
+Или одной командой:
+
+```bash
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/sikuykus-lab/akasha-core/main/scripts/bootstrap.sh)" -- <BRAIN_URL> cursor project
+```
+
+`onboard` делает всё: `ensure-cli` → `backend-detect` → `adopt` → hooks/rule (без PATH) → `harvest` → `sync` → отчёт §3.1.
+
+Проверка: `python3 -m akash_core.cli doctor`
+
+Если `akash` не в PATH — **это нормально**. Hooks используют `python3 -m akash_core.cli`, не `akash`.
 
 ### 2. Проверь backend
 
 ```bash
-akash backend-detect
-akash github-status   # если доступен gh
+python3 -m akash_core.cli backend-detect
+python3 -m akash_core.cli github-status
 ```
 
 Если `github` недоступен — остановись и дай пользователю инструкцию подключить GitHub (`gh auth login` или SSH-ключ). Без хранилища полноценный AKASHA невозможен (§3.2).
@@ -39,11 +52,13 @@ akash github-status   # если доступен gh
 
 ### 4. Bootstrap
 
-```bash
-akash adopt <BRAIN_URL> --agent <agent_id>
-```
+Если уже выполнил `onboard` на шаге 1 — **пропусти** шаги 4–8 (они уже сделаны).
 
-Это создаёт/обновляет `~/.akash/config.local`, клонирует brain, инициализирует структуру при пустом репо.
+Иначе:
+
+```bash
+python3 -m akash_core.cli adopt <BRAIN_URL> --agent <agent_id>
+```
 
 ### 5. Прочитай инструкции из brain
 

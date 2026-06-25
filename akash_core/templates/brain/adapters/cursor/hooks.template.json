@@ -2,10 +2,10 @@
   "version": 1,
   "hooks": {
     "sessionStart": [
-      { "command": "akash pull" }
+      { "command": "python3 -m akash_core.cli pull" }
     ],
     "stop": [
-      { "command": "akash sync" }
+      { "command": "python3 -m akash_core.cli sync" }
     ]
   }
 }

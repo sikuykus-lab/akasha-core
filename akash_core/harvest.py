@@ -1,43 +1,255 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import re
+from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Iterable
 
 import yaml
 
+from .config import load_config
 
-def _iter_sources(brain_path: Path, platform: str) -> Iterable[Path]:
-    """
-    Прочитать adapters/<platform>/harvest-sources.yaml и вернуть пути (§14.2).
-    Упрощённо: ожидаем список glob-паттернов.
-    """
-    cfg = brain_path / "adapters" / platform / "harvest-sources.yaml"
-    if not cfg.exists():
-        return []
-    data = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
-    patterns = data.get("globs", [])
+SECRET_PATTERNS = [
+    r"\.env$",
+    r"credentials",
+    r"secret",
+    r"token",
+    r"\.pem$",
+    r"\.key$",
+    r"id_rsa",
+]
+
+
+@dataclass
+class HarvestReport:
+    agent: str
+    platform: str
+    scanned: int = 0
+    persona_bytes: int = 0
+    rapport_bytes: int = 0
+    actions_entries: int = 0
+    skills_imported: int = 0
+    skills_merged: int = 0
+    skills_drafts: int = 0
+    skills_skipped: int = 0
+    secrets_skipped: int = 0
+    sources: list[str] = field(default_factory=list)
+
+
+def count_skills(brain_path: Path) -> int:
+    skills_dir = brain_path / "skills"
+    if not skills_dir.exists():
+        return 0
+    return sum(
+        1
+        for p in skills_dir.iterdir()
+        if p.is_dir() and p.name not in ("_drafts",) and (p / "SKILL.md").exists()
+    )
+
+
+def _is_secret_path(path: Path) -> bool:
+    name = str(path).lower()
+    return any(re.search(pat, name) for pat in SECRET_PATTERNS)
+
+
+def _expand_glob(pattern: str, project_root: Path) -> list[Path]:
+    pattern = pattern.strip()
+    if pattern.startswith("~/"):
+        root = Path.home()
+        glob_part = pattern[2:]
+    elif pattern.startswith("**"):
+        root = project_root
+        glob_part = pattern
+    else:
+        root = project_root
+        glob_part = pattern
+    found: list[Path] = []
+    for p in root.glob(glob_part):
+        if p.is_file() and not _is_secret_path(p):
+            found.append(p.resolve())
+    return found
+
+
+def _iter_harvest_files(brain_path: Path, platform: str, project_root: Path) -> list[Path]:
+    patterns: list[str] = []
+    for plat in (platform, "_template"):
+        cfg = brain_path / "adapters" / plat / "harvest-sources.yaml"
+        if cfg.exists():
+            data = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+            patterns.extend(data.get("globs", []))
+    # Общие источники §14.2
+    patterns.extend(
+        [
+            str(Path.home() / "SOUL.md"),
+            str(Path.home() / "USER.md"),
+            str(Path.home() / "MEMORY.md"),
+            str(Path.home() / "AGENTS.md"),
+            "SOUL.md",
+            "USER.md",
+            "MEMORY.md",
+            "AGENTS.md",
+        ]
+    )
+    seen: set[Path] = set()
     for pattern in patterns:
-        yield from brain_path.glob(pattern)
+        if "/" not in pattern and not pattern.startswith("~") and not pattern.startswith("**"):
+            for base in (project_root, Path.home(), project_root.parent):
+                candidate = base / pattern
+                if candidate.is_file() and not _is_secret_path(candidate):
+                    seen.add(candidate.resolve())
+            continue
+        for p in _expand_glob(pattern, project_root):
+            seen.add(p)
+    return sorted(seen)
+
+
+def _classify(path: Path) -> str:
+    name = path.name.upper()
+    if name == "SOUL.MD" or name == "AGENTS.MD":
+        return "persona"
+    if name == "USER.MD":
+        return "rapport"
+    if name == "MEMORY.MD" or "MEMORY" in str(path).upper():
+        return "actions"
+    if name == "SKILL.MD":
+        return "skill"
+    if "rules" in str(path).lower() or name.endswith(".MDC"):
+        return "rapport"
+    return "actions"
+
+
+def _append_section(target: Path, header: str, content: str, source: str) -> int:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    block = f"\n\n## {header}\n[harvest:{source}]\n\n{content.strip()}\n"
+    existing = target.read_text(encoding="utf-8") if target.exists() else ""
+    if source in existing:
+        return 0
+    target.write_text(existing + block, encoding="utf-8")
+    return len(block.encode("utf-8"))
+
+
+def _skill_id_from_path(path: Path) -> str:
+    if path.name == "SKILL.md":
+        return path.parent.name
+    return hashlib.sha1(str(path).encode()).hexdigest()[:12]
+
+
+def _import_skill(brain_path: Path, path: Path, merge: bool) -> str:
+    skill_id = _skill_id_from_path(path)
+    dest = brain_path / "skills" / skill_id / "SKILL.md"
+    if dest.exists() and merge:
+        existing = dest.read_text(encoding="utf-8")
+        fragment = path.read_text(encoding="utf-8")
+        if fragment.strip() in existing:
+            return "skipped"
+        dest.write_text(existing + f"\n\n[harvest-merge:{path}]\n\n{fragment}", encoding="utf-8")
+        return "merged"
+    if dest.exists():
+        return "skipped"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    return "imported"
+
+
+def run_harvest(
+    backend,
+    *,
+    preview: bool,
+    merge: bool,
+    project_root: Path | None = None,
+) -> HarvestReport:
+    brain_path = backend.brain_path
+    project_root = project_root or Path.cwd()
+    cfg = load_config()
+    platform = cfg.agent_id or "cursor"
+    report = HarvestReport(agent=platform, platform=platform)
+
+    files = _iter_harvest_files(brain_path, platform, project_root)
+    report.scanned = len(files)
+    report.sources = [str(f) for f in files[:50]]
+
+    persona_path = brain_path / "core" / "persona.md"
+    rapport_path = brain_path / "core" / "rapport.md"
+    actions_path = brain_path / "memory" / "ACTIONS.md"
+
+    for path in files:
+        kind = _classify(path)
+        rel = str(path)
+        if kind == "persona":
+            if not preview:
+                report.persona_bytes += _append_section(
+                    persona_path, path.name, path.read_text(encoding="utf-8", errors="replace"), rel
+                )
+        elif kind == "rapport":
+            if not preview:
+                report.rapport_bytes += _append_section(
+                    rapport_path, path.name, path.read_text(encoding="utf-8", errors="replace"), rel
+                )
+        elif kind == "skill":
+            if preview:
+                report.skills_imported += 1
+            else:
+                result = _import_skill(brain_path, path, merge=merge)
+                if result == "imported":
+                    report.skills_imported += 1
+                elif result == "merged":
+                    report.skills_merged += 1
+                else:
+                    report.skills_skipped += 1
+        else:
+            if not preview:
+                report.actions_entries += 1
+                _append_section(
+                    actions_path, path.name, path.read_text(encoding="utf-8", errors="replace"), rel
+                )
+
+    _print_report(report, preview=preview)
+
+    if not preview:
+        log_path = brain_path / "state" / f"harvest-{date.today().isoformat()}.jsonl"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "agent": report.agent,
+                        "platform": report.platform,
+                        "scanned": report.scanned,
+                        "skills_imported": report.skills_imported,
+                        "skills_merged": report.skills_merged,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+
+    return report
+
+
+def _print_report(report: HarvestReport, preview: bool) -> None:
+    title = "AKASHA Harvest Preview" if preview else "AKASHA Harvest Complete"
+    print(title)
+    print("─" * 22)
+    print(f"Агрегатор:   {report.agent} (cli)")
+    print(f"Сканировано: {report.scanned} файлов")
+    print(f"Профиль:     persona +{report.persona_bytes} B, rapport +{report.rapport_bytes} B")
+    print(f"Память:      ACTIONS +{report.actions_entries} записей")
+    print(
+        f"Skills:      {report.skills_imported} импортировано, "
+        f"{report.skills_merged} merged, {report.skills_skipped} пропущено"
+    )
+    print(f"Секреты:     {report.secrets_skipped} файлов пропущено")
+    print("─" * 22)
+    if preview:
+        print("Записать в brain и sync? [да / нет / только skills / только профиль]")
 
 
 def cli_harvest(backend, preview: bool, merge: bool) -> None:
-    """
-    Заглушка harvest для v1: выводит количество найденных файлов по источникам.
-    Подробный перенос в persona/rapport/ACTIONS/skills оставляем на следующие итерации.
-    """
-    brain_path = backend.brain_path
-    # Платформа в первой итерации не определяем, поэтому используем _template.
-    sources = list(_iter_sources(brain_path, "_template"))
-    print(f"Harvest preview: {len(sources)} files from adapters/_template/harvest-sources.yaml")
-    if preview:
-        return
-    # Здесь должна быть логика записи в brain (§14.3–§14.7).
+    run_harvest(backend, preview=preview, merge=merge)
 
 
 def cli_import_legacy(backend) -> None:
-    """
-    Узкий режим harvest для SOUL/USER/MEMORY/AGENTS (§14.2, §14.3).
-    Сейчас выступает как синоним harvest --merge без платформенных globs.
-    """
-    print("import-legacy is not fully implemented yet; use harvest instead.")
-
+    run_harvest(backend, preview=False, merge=True)
