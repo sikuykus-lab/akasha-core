@@ -42,20 +42,15 @@ def session_start(inp: dict) -> dict:
         t = p.read_text(encoding="utf-8", errors="replace").strip()
         return t[:limit] + ("…" if len(t) > limit else "")
 
-    ctx = f"""# AKASHA — сначала паутина (помощь)
+    ctx = f"""# AKASHA — паутина как сборка
 
 Brain: `{brain_url}`
 
-Перед тем как копать проект вслепую — **сначала паутина**: lego-кубики из brain могут сократить путь.
+Кубик = функция/файл/паттерн, **не готовый ответ**. `prepare` → weave (hint + assembly + entrypoints).
 
-## На задачу
-
-1. `python3 -m akash_core.cli prepare "<задача>"` — до 5 skills из NAV
-2. `read-skill <id>` — только совпавшие кубики
-3. Подходят → строй из них; нет → с нуля
-4. После успеха → remember + sync
-
-Инструменты **не блокируются** — prepare помогает не блуждать, не запрещает.
+1. `python3 -m akash_core.cli prepare "<задача>"`
+2. `read-skill` якорь/glue — склеить entrypoints в новое решение
+3. Нет weave → с нуля
 
 **persona:** {_snippet('core/persona.md') or '(пусто)'}
 **rapport:** {_snippet('core/rapport.md') or '(пусто)'}
