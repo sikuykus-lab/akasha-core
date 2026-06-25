@@ -63,8 +63,8 @@ akash sync
 | `akash init` | Scaffold brain in current directory |
 | `akash migrate` | Migrate brain to latest layout |
 | `akash configure` | Edit `~/.akash/config.local` |
-| `akash pull [--steal]` | Session start + **brain lock** (single writer) |
-| `akash session-status` | Who holds the lock, TTL |
+| `akash pull` | Session start: pull + hot memory |
+| `akash session-status` | Recent agent activity |
 | `akash prepare "task"` | Weave skill pack for a task |
 | `akash read-skill <id>` | Read SKILL.md from current pack |
 | `akash remember "fact"` | Buffer a fact for the session |
@@ -82,12 +82,16 @@ MCP tools (when enabled) mirror the same operations.
 
 ## Parallel agents
 
-Only **one session** may write to the brain at a time:
+Agents **do not block** each other. On `sync` — cooperative merge:
 
-1. **Local** — file lock in `~/.akash/locks/` (two Cursor chats on one Mac).
-2. **Cross-machine** — `state/session_lock.json` in brain (pushed on `pull`).
+| Data | Strategy |
+|------|----------|
+| `usage.jsonl`, `links.jsonl`, `active_sessions.jsonl` | append-only + dedupe |
+| `ACTIONS.md`, persona, rapport | per-agent section markers |
+| `NAV.yaml` | union by `chunk` id |
+| skills | new dirs; existing — merge on harvest |
 
-A second agent gets an error on `pull` / `sync` / `harvest`. Stale lock: `akash pull --steal` after TTL (10 min, renewed on `prepare` / `remember`).
+`sync` runs pull → merge → push with **retry** (up to 5) so GitHub always gets the merged latest.
 
 ## Session lifecycle
 

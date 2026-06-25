@@ -108,13 +108,13 @@ python3 -m akash_core.cli github-status
 ## Контракт после bootstrap (все новые чаты)
 
 ```
-sessionStart  → akash pull          # захват lock
+sessionStart  → akash pull
 новая задача  → akash prepare → read-skill (только из pack)
-работа          → remember, record-outcome
-конец           → akash sync         # снятие lock
+работа          → remember, record-outcome  (буфер локально)
+конец           → akash sync                 (merge → git)
 ```
 
-Параллельно второй агент: `pull`/`sync`/`harvest` отклоняются, пока lock активен. См. `akash session-status`, `akash pull --steal`.
+Параллельные агенты не блокируются: `remember`/`record-outcome` в буфер, `sync` сливает в brain и пушит. `akash session-status` — кто недавно писал.
 
 **Запрещено:** читать каталог `skills/` целиком, `@`-ить все skills — только через `prepare` / `read-skill`.
 

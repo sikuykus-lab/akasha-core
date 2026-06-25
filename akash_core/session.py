@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
 
 SESSION_FILE = Path.home() / ".akash" / "session.json"
+LOCAL_SESSION_FILE = Path.home() / ".akash" / "session_token.json"
 
 
 @dataclass
@@ -74,9 +75,8 @@ def cli_remember(fact: str) -> None:
 
 def cli_record_outcome(skill_id: str, outcome: str, help_score: int) -> None:
     """
-    `akash record-outcome` → state/usage.jsonl (§8).
+    Буфер usage локально; в brain — append-only при sync.
     """
-    # В реальной интеграции сюда нужно прокинуть agent_id; для v1 берём из SESSION_FILE, если есть.
     agent_id = None
     if SESSION_FILE.exists():
         try:
@@ -84,15 +84,21 @@ def cli_record_outcome(skill_id: str, outcome: str, help_score: int) -> None:
             agent_id = session.get("agent")
         except Exception:
             agent_id = None
+    if LOCAL_SESSION_FILE.exists():
+        try:
+            meta = json.loads(LOCAL_SESSION_FILE.read_text(encoding="utf-8"))
+            agent_id = agent_id or meta.get("agent_id")
+        except Exception:
+            pass
     record: dict[str, Any] = {
         "skill": skill_id,
         "outcome": outcome,
         "help_score": help_score,
         "agent": agent_id,
+        "ts": datetime.now(timezone.utc).isoformat(),
     }
-    root = Path.home() / ".akash"
-    usage = root / "usage.jsonl"
-    root.mkdir(parents=True, exist_ok=True)
-    with usage.open("a", encoding="utf-8") as f:
+    pending = Path.home() / ".akash" / "usage_pending.jsonl"
+    pending.parent.mkdir(parents=True, exist_ok=True)
+    with pending.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 

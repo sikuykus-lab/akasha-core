@@ -70,8 +70,7 @@ def _build_parser() -> argparse.ArgumentParser:
     configure.add_argument("--agent-id", required=True, help="Agent id, e.g. cursor, hermes.")
     configure.add_argument("--scope", choices=["project", "user"], required=True)
 
-    pull = subparsers.add_parser("pull", help="Start session: pull brain, hot memory, acquire session lock.")
-    pull.add_argument("--steal", action="store_true", help="Take over stale or foreign session lock.")
+    pull = subparsers.add_parser("pull", help="Start session: pull brain + hot memory.")
     prepare = subparsers.add_parser("prepare", help="Weave pack for a new task.")
     prepare.add_argument("task", help="Task description for prepare().")
 
@@ -105,7 +104,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ingest_session = subparsers.add_parser("ingest-session", help="Ingest AKASHA-INGEST block from stdin.")
     ingest_session.add_argument("--agent", required=True)
 
-    subparsers.add_parser("session-status", help="Show who holds the brain session lock.")
+    subparsers.add_parser("session-status", help="Recent agent activity (cooperative mode).")
 
     subparsers.add_parser("status", help="Show brain status and config.")
 
@@ -206,15 +205,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "pull":
         agent_id = config.agent_id or "cursor"
-        brain_mod.pull_brain(backend, agent_id, steal=args.steal)
+        brain_mod.pull_brain(backend, agent_id)
         session_mod.load_hot_memory(backend.brain_path)
         return 0
 
     if args.command == "prepare":
-        agent_id = config.agent_id or "cursor"
-        from . import session_lock as lock_mod
-
-        lock_mod.renew(backend, agent_id)
         nav_mod.cli_prepare(backend, args.task)
         return 0
 
@@ -223,18 +218,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "remember":
-        from . import session_lock as lock_mod
-
-        agent_id = config.agent_id or "cursor"
-        lock_mod.renew(backend, agent_id)
         session_mod.cli_remember(args.fact)
         return 0
 
     if args.command == "record-outcome":
-        from . import session_lock as lock_mod
-
-        agent_id = config.agent_id or "cursor"
-        lock_mod.renew(backend, agent_id)
         session_mod.cli_record_outcome(
             skill_id=args.skill_id,
             outcome=args.outcome,
@@ -252,11 +239,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "harvest":
-        if not args.preview:
-            from . import session_lock as lock_mod
-
-            agent_id = config.agent_id or "cursor"
-            lock_mod.assert_holder(backend, agent_id)
         harvest_mod.cli_harvest(backend, preview=args.preview, merge=args.merge)
         return 0
 
@@ -281,9 +263,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "session-status":
-        from . import session_lock as lock_mod
+        from . import merge_sync as merge_mod
 
-        lock_mod.cli_session_status(backend, config.agent_id)
+        merge_mod.cli_session_status(backend, config.agent_id)
         return 0
 
     parser.error(f"Unknown command: {args.command}")

@@ -159,26 +159,27 @@ def _write_manifest(path: Path, manifest: Manifest) -> None:
     path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
-def pull_brain(backend: Backend, agent_id: str, *, steal: bool = False) -> None:
-    from . import session_lock as lock_mod
+def pull_brain(backend: Backend, agent_id: str) -> None:
+    from . import merge_sync as merge_mod
 
-    lock_mod.acquire(backend, agent_id, steal=steal)
+    backend.pull()
+    merge_mod.register_pull(backend, agent_id)
+
+
+def bump_brain_version(brain_path: Path, agent_id: str) -> None:
+    manifest_path = brain_path / MANIFEST_NAME
+    manifest = _read_manifest(manifest_path)
+    manifest.brain_version += 1
+    if agent_id not in manifest.supported_agents:
+        manifest.supported_agents.append(agent_id)
+    _write_manifest(manifest_path, manifest)
+    _update_consciousness(brain_path, agent_id)
 
 
 def cli_sync(backend: Backend, agent_id: str) -> None:
-    """
-    `akash sync` = verify lock → pull → compact → NAV → release → push.
-    """
-    from . import session as session_mod
-    from . import nav as nav_mod
-    from . import session_lock as lock_mod
+    from . import merge_sync as merge_mod
 
-    lock_mod.assert_holder(backend, agent_id)
-    backend.pull()
-    session_mod.compact_hot_memory(backend.brain_path)
-    nav_mod.recompute_nav(backend.brain_path)
-    lock_mod.release(backend, agent_id)
-    backend.push()
+    merge_mod.cooperative_sync(backend, agent_id)
 
 
 def cli_status(backend: Backend, cfg: Config) -> None:
@@ -214,9 +215,22 @@ def bootstrap_brain(backend: Backend, agent_id: str) -> None:
 def _update_consciousness(brain_path: Path, agent_id: str) -> None:
     path = brain_path / "CONSCIOUSNESS.md"
     ts = _now_iso()
-    content = (
-        f"Последний агрегатор: {agent_id}\n"
-        f"Время (UTC): {ts}\n"
-    )
-    path.write_text(content, encoding="utf-8")
+    manifest = _read_manifest(brain_path / MANIFEST_NAME)
+    lines = [
+        "CONSCIOUSNESS",
+        "",
+        f"Brain version: {manifest.brain_version}",
+        f"Skills: see NAV.yaml",
+        "",
+        "Recent agents:",
+    ]
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    for line in existing.splitlines():
+        if line.strip().startswith("- "):
+            lines.append(line.strip())
+    lines.append(f"- {agent_id} @ {ts}")
+    # хвост — последние 12 записей
+    header = lines[:6]
+    agents = [ln for ln in lines[6:] if ln.startswith("- ")][-12:]
+    path.write_text("\n".join(header + agents) + "\n", encoding="utf-8")
 
