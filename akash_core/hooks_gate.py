@@ -9,21 +9,6 @@ CONFIG = Path.home() / ".akash" / "config.local"
 SESSION = Path.home() / ".akash" / "session.json"
 META = Path.home() / ".akash" / ".session_meta.json"
 
-WORK_TOOLS = frozenset(
-    {"Read", "Write", "Grep", "Delete", "StrReplace", "EditNotebook", "Shell", "Task"}
-)
-AKASHA_CLI_MARKERS = ("akash_core.cli", " akash ", "pip install")
-
-
-def pack_ready(session_path: Path = SESSION) -> bool:
-    if not session_path.is_file():
-        return False
-    try:
-        data = json.loads(session_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return False
-    return bool(data.get("task")) and bool(data.get("skills"))
-
 
 def session_start(inp: dict) -> dict:
     session_id = inp.get("session_id", "")
@@ -57,17 +42,17 @@ def session_start(inp: dict) -> dict:
         t = p.read_text(encoding="utf-8", errors="replace").strip()
         return t[:limit] + ("…" if len(t) > limit else "")
 
-    ctx = f"""# AKASHA — обязательный протокол (always)
+    ctx = f"""# AKASHA — протокол (рекомендуемый)
 
 Brain: `{brain_url}`
 
-## На КАЖДУЮ задачу пользователя
+## На задачу
 
-1. `python3 -m akash_core.cli prepare "<задача>"`
-2. `read-skill` только из pack
-3. Потом код и файлы
+1. `python3 -m akash_core.cli prepare "<задача>"` — lego-кубики из паутины
+2. `read-skill` из pack, если подходят
+3. Работа (можно с нуля); после успеха — skill в brain + `sync`
 
-До prepare **запрещено** Read/Write/Grep/Shell по проекту (hook заблокирует).
+Инструменты **не блокируются** — prepare желателен, не gate.
 
 **persona:** {_snippet('core/persona.md') or '(пусто)'}
 **rapport:** {_snippet('core/rapport.md') or '(пусто)'}
@@ -76,29 +61,7 @@ Brain: `{brain_url}`
 
 
 def prepare_gate(inp: dict) -> dict:
-    if not CONFIG.is_file():
-        return {"permission": "allow"}
-
-    tool = inp.get("tool_name") or ""
-    tool_input = inp.get("tool_input") or {}
-
-    if tool == "Shell":
-        cmd = str(tool_input.get("command") or "")
-        if any(m in cmd for m in AKASHA_CLI_MARKERS):
-            return {"permission": "allow"}
-
-    if pack_ready():
-        return {"permission": "allow"}
-
-    if tool in WORK_TOOLS:
-        return {
-            "permission": "deny",
-            "agent_message": (
-                "AKASHA: выполни prepare по задаче пользователя, затем read-skill из pack. "
-                "python3 -m akash_core.cli prepare \"<задача>\""
-            ),
-            "user_message": "Сначала паутина AKASHA (prepare).",
-        }
+    """Мягкий режим: инструменты не блокируются."""
     return {"permission": "allow"}
 
 

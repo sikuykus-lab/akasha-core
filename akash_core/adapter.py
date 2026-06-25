@@ -34,7 +34,7 @@ def _install_hook_scripts(brain_path: Path, project_root: Path, agent_id: str) -
 
 def install_cursor_shell(*, brain_path: Path, project_root: Path, agent_id: str = "cursor") -> list[str]:
     """
-    Собрать оболочку Cursor: rule + hooks (sessionStart, preToolUse gate, stop).
+    Собрать оболочку Cursor: rule + hooks (sessionStart, stop). Gate не блокирует.
     """
     created: list[str] = []
     rules_dir = project_root / ".cursor" / "rules"
@@ -50,7 +50,6 @@ def install_cursor_shell(*, brain_path: Path, project_root: Path, agent_id: str 
     created.extend(hook_scripts)
 
     session_hook = project_root / ".cursor" / "hooks" / "akash-session-start.py"
-    gate_hook = project_root / ".cursor" / "hooks" / "akash-prepare-gate.py"
 
     hooks_path = project_root / ".cursor" / "hooks.json"
     hooks: dict = {
@@ -65,13 +64,6 @@ def install_cursor_shell(*, brain_path: Path, project_root: Path, agent_id: str 
 
     if session_hook.is_file():
         hooks["hooks"]["sessionStart"] = [{"command": str(session_hook)}]
-    if gate_hook.is_file():
-        hooks["hooks"]["preToolUse"] = [
-            {
-                "command": str(gate_hook),
-                "matcher": "Read|Write|Grep|Shell|StrReplace|Delete|EditNotebook|Task",
-            }
-        ]
 
     hooks_path.write_text(json.dumps(hooks, indent=2) + "\n", encoding="utf-8")
     created.append(str(hooks_path))
