@@ -21,34 +21,10 @@ class SkillScore:
 
 
 def recompute_nav(brain_path: Path) -> None:
-    """
-    Пересчитать NAV по state/usage.jsonl (§7, §8, §10).
-    """
-    usage_path = brain_path / "state" / "usage.jsonl"
-    scores: dict[str, SkillScore] = {}
-    if usage_path.exists():
-        for line in usage_path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            record: dict[str, Any] = json.loads(line)
-            skill = record.get("skill")
-            if not skill:
-                continue
-            outcome = record.get("outcome")
-            help_score = int(record.get("help_score", 1))
-            entry = scores.get(skill) or SkillScore(skill=skill, score=0.0, uses=0)
-            delta = help_score if outcome == "success" else -help_score
-            entry.score += delta
-            entry.uses += 1
-            scores[skill] = entry
-    nav_data = {
-        "skills": [
-            {"id": s.skill, "score": s.score, "uses": s.uses}
-            for s in sorted(scores.values(), key=lambda s: s.score, reverse=True)
-        ]
-    }
-    nav_path = brain_path / "skills" / "NAV.yaml"
-    nav_path.write_text(yaml.safe_dump(nav_data, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    """Пересчитать NAV scores, сохранить chunks/sets (§7, §10)."""
+    from .nav_map import merge_usage_scores
+
+    merge_usage_scores(brain_path)
 
 
 def _load_nav(brain_path: Path) -> list[SkillScore]:
@@ -69,17 +45,16 @@ def _load_nav(brain_path: Path) -> list[SkillScore]:
 
 
 def cli_prepare(backend, task: str) -> None:
-    """
-    weаve pack ≤24KB по NAV + INEFFECTIVE (§7).
-    Упрощённо: выбираем 3–5 skills с наибольшим score.
-    """
+    """Weave pack ≤24KB: Fit×Track по NAV chunks + usage (§7)."""
+    from .nav_map import fit_skills_for_task
+
     brain_path = backend.brain_path
-    scores = _load_nav(brain_path)
-    top = scores[:5]
-    pack: dict[str, Any] = {
-        "task": task,
-        "skills": [s.skill for s in top],
-    }
+    skill_ids = fit_skills_for_task(brain_path, task, limit=5)
+    if not skill_ids:
+        scores = _load_nav(brain_path)
+        skill_ids = [s.skill for s in scores[:5]]
+
+    pack: dict[str, Any] = {"task": task, "skills": skill_ids}
     SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
     with SESSION_FILE.open("w", encoding="utf-8") as f:
         json.dump(pack, f, ensure_ascii=False)

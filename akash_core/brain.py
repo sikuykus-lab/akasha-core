@@ -94,7 +94,10 @@ def init_brain(path: Path) -> None:
 
     nav = path / "skills" / "NAV.yaml"
     if not nav.exists():
-        nav.write_text("# NAV cache, пересчитывается при sync\n", encoding="utf-8")
+        nav.write_text(
+            yaml.safe_dump({"chunks": [], "sets": [], "skills": []}, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
 
     ineffective = path / "skills" / "INEFFECTIVE.yaml"
     if not ineffective.exists():

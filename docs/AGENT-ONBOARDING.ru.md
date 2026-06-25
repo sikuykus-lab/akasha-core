@@ -71,7 +71,9 @@ python3 -m akash_core.cli onboard --agent <agent_id> --scope project
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/sikuykus-lab/akasha-core/main/scripts/bootstrap.sh)" -- cursor project
 ```
 
-`onboard` делает всё: install → `gh` → **создание private brain на GitHub пользователя** → adopt → hooks/rule → harvest → sync → отчёт §3.1.
+`onboard` делает всё: install → `gh` → private brain → adopt → hooks/rule → **harvest** (импорт + **синтез lego-skills из проектов**) → sync.
+
+Harvest §14.4: сканирует каталоги проектов в workspace, режет на **атомарные skills-кубики**, проверяет **три закона** (I–III), карту кладёт в `skills/NAV.yaml` (`chunks`, `sets`). `prepare` собирает pack по тегам задачи.
 
 Проверка: `python3 -m akash_core.cli doctor`
 
