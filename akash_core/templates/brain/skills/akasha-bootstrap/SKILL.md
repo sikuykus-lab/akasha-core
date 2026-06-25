@@ -12,17 +12,20 @@
 ## Что делать (по порядку)
 
 1. Определи `agent_id` платформы → `adapters/<platform>/`.
-2. Выполни `akash backend-detect`. Если GitHub доступен — `backend: github`.
-3. `akash adopt <URL> --agent <agent_id>`
-4. Прочитай `adapters/<platform>/bootstrap.md` и выполни чеклист.
-5. Собери оболочку: `inject.md` → rule; `hooks.template.json` → hooks; `mcp.template.json` → MCP.
-6. Спроси scope: `project` | `user`.
-7. `akash harvest --preview` → подтверждение → `akash harvest` → `akash sync`
-8. `akash pull` → финальное сообщение §3.1.
+2. Установи и запусти onboard (PATH не нужен):
+
+```bash
+python3 -m pip install --user --upgrade git+https://github.com/sikuykus-lab/akasha-core.git
+python3 -m akash_core.cli onboard <BRAIN_URL> --agent <agent_id> --scope project
+python3 -m akash_core.cli doctor
+```
+
+3. Если onboard уже выполнен — прочитай `adapters/<platform>/bootstrap.md` для проверки.
+4. Финальное сообщение §3.1.
 
 ## MUST после установки
 
-- `sessionStart` → `akash pull`
+- `sessionStart` → `python3 -m akash_core.cli pull`
 - новая задача → `akash prepare` → `read-skill` только из pack
 - факты → `akash remember`
 - конец → `akash sync`
