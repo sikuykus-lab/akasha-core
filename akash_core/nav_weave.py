@@ -192,8 +192,10 @@ def score_cube_for_task(
     if task_tokens & id_tokens:
         score += 4.0
     if "game" in task_tokens and "game" in id_tokens:
-        score += 12.0
-    if ("page" in task_tokens or "html" in task_tokens) and any(
+        score += 25.0
+    if "game" in task_tokens and "game" not in id_tokens and "dataroom" in id_tokens:
+        score -= 15.0
+    if ("page" in task_tokens or "html" in task_tokens or "localhost" in task_tokens) and any(
         x in id_tokens for x in ("dataroom", "html", "streamlit", "site", "page")
     ):
         score += 10.0
