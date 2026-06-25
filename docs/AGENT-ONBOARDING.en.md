@@ -1,8 +1,8 @@
 # AKASHA — AI agent onboarding (EN)
 
-**User trigger phrase (§3.1 AKASHA-TZ):**
+**User trigger phrase:**
 
-> Set yourself up from this GitHub project: `https://github.com/<user>/akash-brain`
+> Set yourself up from this GitHub project: `https://github.com/sikuykus-lab/akasha-core`
 
 Russian equivalent: «Настрой себя по данному проекту GitHub: `<URL>`»
 
@@ -47,7 +47,7 @@ akash backend-detect
 akash github-status
 ```
 
-If `github` is unavailable, stop and tell the user to connect GitHub (`gh auth login` or SSH key). Without storage, full AKASHA is not possible (§3.2).
+If `github` is unavailable, stop and tell the user to connect GitHub (`gh auth login` or SSH key). Without storage, full AKASHA is not possible.
 
 ### 3. Extract brain URL from the user message
 
@@ -65,7 +65,7 @@ This writes `~/.akash/config.local`, clones the brain, and scaffolds an empty re
 
 After clone, open in the brain repository:
 
-1. `skills/akash-bootstrap/SKILL.md` — main checklist (§12)
+1. `skills/akash-bootstrap/SKILL.md` — main checklist
 2. `adapters/<agent_id>/bootstrap.md` — platform steps
 3. `adapters/<agent_id>/inject.md` — lifecycle rule text (MUST)
 4. `adapters/<agent_id>/hooks.template.json` — sessionStart → pull, stop → sync
@@ -112,7 +112,7 @@ akash pull
 akash status
 ```
 
-### 9. Final message to the user (§3.1)
+### 9. Final message to the user
 
 > **Ready. We are AKASHA.**  
 > Brain vN · `<agent_id>` · `<transport>` · `github` · N skills (M imported at setup)  

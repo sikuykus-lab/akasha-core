@@ -31,7 +31,7 @@ def load_config() -> Config:
     """
     Load ~/.akash/config.local if it exists, otherwise return an empty Config.
 
-    Формат файла соответствует §2.5 AKASHA-TZ (backend, brain_url/brain_host/brain_path, agent_id, scope).
+    Формат: backend, brain_url/brain_host/brain_path, agent_id, scope.
     """
     if not CONFIG_PATH.exists():
         return Config()

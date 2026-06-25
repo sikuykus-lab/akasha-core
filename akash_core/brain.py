@@ -47,7 +47,7 @@ def _copy_tree_if_missing(src: Path, dst: Path) -> None:
 
 def init_brain(path: Path) -> None:
     """
-    Scaffold brain-репозиторий в соответствии с §5 AKASHA-TZ.
+    Scaffold brain-репозиторий по фиксированной схеме.
     """
     path.mkdir(parents=True, exist_ok=True)
 
@@ -94,10 +94,7 @@ def init_brain(path: Path) -> None:
 
     nav = path / "skills" / "NAV.yaml"
     if not nav.exists():
-        nav.write_text(
-            yaml.safe_dump({"chunks": [], "sets": [], "skills": []}, sort_keys=False, allow_unicode=True),
-            encoding="utf-8",
-        )
+        nav.write_text("# NAV cache, пересчитывается при sync\n", encoding="utf-8")
 
     ineffective = path / "skills" / "INEFFECTIVE.yaml"
     if not ineffective.exists():

@@ -1,59 +1,102 @@
 AKASHA Core (`akasha-core`)
 ===========================
 
-这是按照 `AKASHA-TZ v1.8` 规范实现的 AKASHA 核心（`akash-core v1`）的
-Python 版本。
+**AKASHA** 的 Python 核心 — 为 AI 智能体（Cursor、Claude Code、Hermes 等）提供共享记忆与 skills。
 
-- 单一 brain 仓库（GitHub 私有仓库或服务器目录），结构固定；
-- CLI 工具 `akash` 与库 `akash_core`，用于 `adopt`、`pull`、`prepare`、
-  `remember`、`sync` 等操作；
-- 支持 `github` 与 `server` 两种 backend，详见规范 §2.5。
+- 单一 **brain**（GitHub 私有仓库或服务器目录）— persona、rapport、skills、NAV。
+- CLI `akash` 与库 `akash_core`。
+- 后端：`github` 或 `server`。
+- 在聊天中 **一句话** onboard — 智能体自动安装核心并创建您的私有 `akash-brain`。
 
-行为以规范为唯一依据：
+**语言：** [Русский](README.md) · [English](README.en.md)
 
-- `AKASHA-TZ v1.8`（副本存放于用户的工作仓库，如
-  `Google Sheets/akash/AKASHA-TZ.md`）。
+## 聊天触发语
 
-## 法律 / SaaS 状态
+已配置 GitHub（`gh auth login` 或 SSH）时：
 
-`akasha-core` **不是** 开源项目，而是 AKASHA 的专有核心。
-所有权利归 `sikuykus-lab` 所有。
+> **按此 GitHub 项目配置：** `https://github.com/sikuykus-lab/akasha-core`
 
-仅允许以下使用场景：
+智能体按 `docs/AGENT-ONBOARDING.zh.md` 执行 bootstrap。另见 `docs/AGENT-ONBOARDING.ru.md`、`docs/AGENT-ONBOARDING.en.md`。
 
-- 与您的私有 AKASHA brain 仓库集成（GitHub 或自有服务器）；
-- 经所有者明确批准的、与 AKASHA 兼容的 SaaS 解决方案。
-
-许可证文本：
-
-- `LICENSE.md` — 主许可证（俄文，为法律文本）；
-- `LICENSE.en.md` — 英文翻译；
-- `LICENSE.es.md` — 西班牙文翻译；
-- `LICENSE.zh.md` — 中文翻译。
-
-## 安装（从源码）
+## 安装
 
 ```bash
-cd akasha-core
-pip install -e .
+python3 -m pip install --user git+https://github.com/sikuykus-lab/akasha-core.git
+```
+
+从源码（开发）：
+
+```bash
+cd akasha-core && pip install -e .
 ```
 
 ## 快速开始
 
 ```bash
-# 使用 GitHub 上的 brain 仓库进行 bootstrap
-akash adopt https://github.com/user/akash-brain --agent cursor
+# 完整 bootstrap：SaaS → 私有 brain → hooks → harvest
+python3 -m akash_core.cli onboard https://github.com/sikuykus-lab/akasha-core --agent cursor
 
-# 查看状态
+# 已有 brain
+akash adopt https://github.com/<your-user>/akash-brain --agent cursor
+
+# 服务器上的 brain
+akash adopt --server user@host:~/.akash/brain --agent hermes
+
 akash status
-
-# 启动会话
 akash pull
-
-# 会话结束时同步
 akash sync
 ```
 
-完整命令列表与生命周期说明，请参考 `AKASHA-TZ v1.8` 的 §11 以及
-`docs/AKASHA-INSTRUCTIONS.*.md` 中的文档。
+## CLI 命令
 
+| 命令 | 说明 |
+|------|------|
+| `akash onboard [url]` | 完整 bootstrap：安装 → brain → shell → harvest → sync |
+| `akash adopt <url>` | 连接已有 brain（GitHub URL） |
+| `akash adopt --server <user@host:path>` | 用户服务器上的 brain |
+| `akash create-brain` | 在 GitHub 创建私有 `akash-brain` |
+| `akash install-shell` | 升级后重装 Cursor hooks 与 rule |
+| `akash doctor` | 诊断 CLI、配置、brain、GitHub |
+| `akash ensure-cli` | 若未安装则安装 `akasha-core` |
+| `akash backend-detect` | 可用后端：`github` / `server` |
+| `akash github-status` | GitHub 认证状态 |
+| `akash init` | 在当前目录 scaffold brain |
+| `akash migrate` | 迁移 brain 至最新结构 |
+| `akash configure` | 编辑 `~/.akash/config.local` |
+| `akash pull` | 会话开始：pull + 热记忆（persona、rapport、ACTIONS） |
+| `akash prepare "任务"` | 为任务编织 skill pack |
+| `akash read-skill <id>` | 从当前 pack 读取 SKILL.md |
+| `akash remember "事实"` | 会话缓冲记录事实 |
+| `akash record-outcome <id> success\|failure` | 记录 skill 使用结果 → usage.jsonl |
+| `akash compact-check` | 检查热记忆是否需压缩 |
+| `akash sync` | pull → compact → NAV → push 至 brain |
+| `akash harvest [--preview] [--merge]` | 从智能体收割至 brain |
+| `akash import-legacy` | 窄收割：SOUL/USER/MEMORY/AGENTS |
+| `akash export-session --agent <id>` | UPP：可粘贴到聊天的记忆块 |
+| `akash export-pack "任务" --agent <id>` | UPP：任务 pack |
+| `akash ingest-session --agent <id>` | UPP：解析 AKASHA-INGEST 块 |
+| `akash status` | brain_version、backend、scope |
+
+MCP 工具（若启用）与上述操作一一对应。
+
+## 会话生命周期
+
+```
+sessionStart  →  akash pull
+新任务        →  akash prepare "…"  →  akash read-skill <id>
+工作中        →  akash remember  ·  akash record-outcome
+结束          →  akash sync
+```
+
+仅通过 `prepare` / `read-skill` 读取 skills，勿整目录扫描 `skills/`。
+
+## 法律声明
+
+`akasha-core` 为 **专有** 软件，非开源。权利归属：`sikuykus-lab`。
+
+允许：与 **您的** 私有 brain 集成；经所有者批准的 AKASHA 兼容 SaaS。
+
+- [LICENSE.md](LICENSE.md) — 俄文（具法律效力）
+- [LICENSE.en.md](LICENSE.en.md) · [LICENSE.zh.md](LICENSE.zh.md) — 译文
+
+用户说明：`docs/AKASHA-INSTRUCTIONS.zh.md`（同目录含 ru/en）。

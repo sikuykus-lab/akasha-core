@@ -10,7 +10,7 @@
 **Не указывайте** чужой private brain (`sikuykus-lab/akash-brain` и т.п.) — агент не получит доступ.
 Указывайте **публичный SaaS** — AKASHA сам создаст `https://github.com/<ваш-user>/akash-brain`.
 
-**Триггер пользователя (§3.1 AKASHA-TZ):**
+**Триггер пользователя:**
 
 > Настрой себя по данному проекту GitHub: `https://github.com/sikuykus-lab/akasha-core`
 
@@ -71,9 +71,7 @@ python3 -m akash_core.cli onboard --agent <agent_id> --scope project
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/sikuykus-lab/akasha-core/main/scripts/bootstrap.sh)" -- cursor project
 ```
 
-`onboard` делает всё: install → `gh` → private brain → adopt → hooks/rule → **harvest** (импорт + **синтез lego-skills из проектов**) → sync.
-
-Harvest §14.4: сканирует каталоги проектов в workspace, режет на **атомарные skills-кубики**, проверяет **три закона** (I–III), карту кладёт в `skills/NAV.yaml` (`chunks`, `sets`). `prepare` собирает pack по тегам задачи.
+`onboard` делает всё: install → `gh` → **создание private brain на GitHub пользователя** → adopt → hooks/rule → harvest → sync → отчёт.
 
 Проверка: `python3 -m akash_core.cli doctor`
 
@@ -86,7 +84,7 @@ python3 -m akash_core.cli backend-detect
 python3 -m akash_core.cli github-status
 ```
 
-Если `github` недоступен — остановись и дай пользователю инструкцию: `gh auth login`. Без хранилища полноценный AKASHA невозможен (§3.2).
+Если `github` недоступен — остановись и дай пользователю инструкцию: `gh auth login`. Без хранилища полноценный AKASHA невозможен.
 
 ### 3. URL из фразы пользователя
 
@@ -98,7 +96,7 @@ python3 -m akash_core.cli github-status
 
 Иначе вручную: `adopt`, harvest, sync — см. `docs/AKASHA-INSTRUCTIONS.ru.md`.
 
-### 9. Финальное сообщение пользователю (§3.1)
+### 9. Финальное сообщение пользователю
 
 > **Готов к работе. Мы — есть AKASHA.**  
 > Brain vN · `<agent_id>` · `github` · `https://github.com/<user>/akash-brain`  
@@ -124,4 +122,4 @@ sessionStart  → akash pull
 
 - SaaS (публичный): https://github.com/sikuykus-lab/akasha-core
 - Инструкции: `docs/AKASHA-INSTRUCTIONS.ru.md`
-- ТЗ: AKASHA-TZ v1.8
+- Команды CLI: [README.md](../README.md)

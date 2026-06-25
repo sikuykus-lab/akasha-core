@@ -1,8 +1,8 @@
 # AKASHA — AI 代理 onboarding（ZH）
 
-**用户触发语（§3.1 AKASHA-TZ）：**
+**用户触发语：**
 
-> 根据此 GitHub 项目完成自我配置：`https://github.com/<user>/akash-brain`
+> 根据此 GitHub 项目完成自我配置：`https://github.com/sikuykus-lab/akasha-core`
 
 俄语等价句：«Настрой себя по данному проекту GitHub: `<URL>`»
 
@@ -21,7 +21,7 @@
 7. 询问 scope（`project` | `user`）→ `akash configure ...`
 8. `akash harvest --preview` → 用户确认 → `akash harvest` → `akash sync`
 9. `akash pull` + `akash status`
-10. 向用户发送 §3.1 最终消息：「就绪。我们是 AKASHA。」
+10. 向用户发送最终消息：「就绪。我们是 AKASHA。」
 
 后续契约：会话开始 `pull`，新任务 `prepare`，结束 `sync`。禁止通读整个 `skills/` 目录。
 

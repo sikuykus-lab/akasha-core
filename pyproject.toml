@@ -4,8 +4,8 @@
 
  [project]
  name = "akasha-core"
- version = "0.3.1"
- description = "AKASHA core CLI and library implementing akash-core v1 as specified in AKASHA-TZ."
+version = "0.3.2"
+description = "AKASHA core CLI and library (akash-core v1)."
  readme = "README.md"
  requires-python = ">=3.11"
  dependencies = [

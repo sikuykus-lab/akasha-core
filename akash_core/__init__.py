@@ -1,7 +1,5 @@
 """
 AKASHA core Python package.
-
-Поведение и интерфейсы определяются документом AKASHA-TZ v1.8.
 """
 
 __all__ = [

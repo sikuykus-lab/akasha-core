@@ -1,57 +1,102 @@
 AKASHA Core (`akasha-core`)
 ===========================
 
-This is the Python implementation of the AKASHA core (`akash-core v1`) as specified
-in `AKASHA-TZ v1.8`.
+Python core for **AKASHA** — shared memory and skills for AI agents (Cursor, Claude Code, Hermes, etc.).
 
-- Single brain repository (private GitHub or a directory on your server) with a fixed layout.
-- CLI tool `akash` and library `akash_core` for `adopt`, `pull`, `prepare`, `remember`, `sync` and more.
-- Backends `github` and `server` as described in §2.5 of the spec.
+- One **brain** (private GitHub or server directory) — persona, rapport, skills, NAV.
+- CLI `akash` and library `akash_core`.
+- Backends: `github` or `server`.
+- **One-phrase** chat onboard — the agent installs the core and creates your private `akash-brain`.
 
-The spec is the single source of truth:
+**Translations:** [Русский](README.md) · [中文](README.zh.md)
 
-- `AKASHA-TZ v1.8` (a copy lives in the user’s working repository, e.g. `Google Sheets/akash/AKASHA-TZ.md`).
+## One phrase in chat
 
-## Legal / SaaS status
+With GitHub configured (`gh auth login` or SSH):
 
-`akasha-core` is **not** open source. It is a proprietary AKASHA core.
-All rights belong to `sikuykus-lab`.
+> **Set yourself up from this GitHub project:** `https://github.com/sikuykus-lab/akasha-core`
 
-Use of the code is allowed only for:
+The agent follows `docs/AGENT-ONBOARDING.en.md`. Also: `docs/AGENT-ONBOARDING.ru.md`, `docs/AGENT-ONBOARDING.zh.md`.
 
-- integration with your private AKASHA brain repository (GitHub or server);
-- AKASHA‑compatible SaaS solutions explicitly approved by the owner.
-
-License texts:
-
-- `LICENSE.md` — main license (Russian, binding);
-- `LICENSE.en.md` — English translation;
-- `LICENSE.es.md` — Spanish translation;
-- `LICENSE.zh.md` — Chinese translation.
-
-## Installation (from source)
+## Install
 
 ```bash
-cd akasha-core
-pip install -e .
+python3 -m pip install --user git+https://github.com/sikuykus-lab/akasha-core.git
+```
+
+From source (development):
+
+```bash
+cd akasha-core && pip install -e .
 ```
 
 ## Quick start
 
 ```bash
-# bootstrap against a GitHub brain repo
-akash adopt https://github.com/user/akash-brain --agent cursor
+# full bootstrap: SaaS → your private brain → hooks → harvest
+python3 -m akash_core.cli onboard https://github.com/sikuykus-lab/akasha-core --agent cursor
 
-# check status
+# brain already exists
+akash adopt https://github.com/<your-user>/akash-brain --agent cursor
+
+# brain on your server
+akash adopt --server user@host:~/.akash/brain --agent hermes
+
 akash status
-
-# start session
 akash pull
-
-# sync at end of session
 akash sync
 ```
 
-See §11 of `AKASHA-TZ v1.8` and the docs in `docs/AKASHA-INSTRUCTIONS.*.md`
-for the full command list and lifecycle.
+## CLI commands
 
+| Command | Purpose |
+|---------|---------|
+| `akash onboard [url]` | Full bootstrap: install → brain → shell → harvest → sync |
+| `akash adopt <url>` | Connect existing brain (GitHub URL) |
+| `akash adopt --server <user@host:path>` | Brain on user server |
+| `akash create-brain` | Create private `akash-brain` on GitHub |
+| `akash install-shell` | Reinstall Cursor hooks and rule after upgrade |
+| `akash doctor` | Diagnose CLI, config, brain, GitHub |
+| `akash ensure-cli` | Install `akasha-core` if missing |
+| `akash backend-detect` | Available backends: `github` / `server` |
+| `akash github-status` | GitHub auth status |
+| `akash init` | Scaffold brain in current directory |
+| `akash migrate` | Migrate brain to latest layout |
+| `akash configure` | Edit `~/.akash/config.local` |
+| `akash pull` | Session start: pull + hot memory (persona, rapport, ACTIONS) |
+| `akash prepare "task"` | Weave skill pack for a task |
+| `akash read-skill <id>` | Read SKILL.md from current pack |
+| `akash remember "fact"` | Buffer a fact for the session |
+| `akash record-outcome <id> success\|failure` | Record skill usage → usage.jsonl |
+| `akash compact-check` | Check if hot memory needs compaction |
+| `akash sync` | pull → compact → NAV → push to brain |
+| `akash harvest [--preview] [--merge]` | Harvest from aggregator into brain |
+| `akash import-legacy` | Narrow harvest: SOUL/USER/MEMORY/AGENTS |
+| `akash export-session --agent <id>` | UPP: memory block for chat paste |
+| `akash export-pack "task" --agent <id>` | UPP: pack for a task |
+| `akash ingest-session --agent <id>` | UPP: parse AKASHA-INGEST block |
+| `akash status` | brain_version, backend, scope |
+
+MCP tools (when enabled) mirror the same operations.
+
+## Session lifecycle
+
+```
+sessionStart  →  akash pull
+new task      →  akash prepare "…"  →  akash read-skill <id>
+work            →  akash remember  ·  akash record-outcome
+end             →  akash sync
+```
+
+Read skills **only** via `prepare` / `read-skill` — not the whole `skills/` tree.
+
+## Legal
+
+`akasha-core` is **proprietary**, not open source. Rights: `sikuykus-lab`.
+
+Allowed: integration with **your** private brain; AKASHA-compatible SaaS with owner approval.
+
+- [LICENSE.md](LICENSE.md) — Russian (binding)
+- [LICENSE.en.md](LICENSE.en.md) · [LICENSE.zh.md](LICENSE.zh.md) — translations
+
+User guide: `docs/AKASHA-INSTRUCTIONS.en.md` (ru/zh in the same folder).
