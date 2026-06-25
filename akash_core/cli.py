@@ -85,6 +85,17 @@ def _build_parser() -> argparse.ArgumentParser:
     record_outcome.add_argument("outcome", choices=["success", "failure"])
     record_outcome.add_argument("--help-score", type=int, default=1)
 
+    create_skill = subparsers.add_parser(
+        "create-skill",
+        help="Save a new lego skill cube into brain (after a successful task).",
+    )
+    create_skill.add_argument("skill_id", help="Skill id (slug).")
+    create_skill.add_argument("--file", type=Path, help="SKILL.md file; else read stdin.")
+    create_skill.add_argument("--tags", nargs="*", default=None, help="NAV tags.")
+    create_skill.add_argument("--built-from", nargs="*", default=None, help="Parent skill ids.")
+    create_skill.add_argument("--project", default="manual", help="Project label in NAV.")
+    create_skill.add_argument("--draft", action="store_true", help="Force _drafts/ even if valid.")
+
     subparsers.add_parser("compact-check", help="Check if hot memory needs compaction.")
     subparsers.add_parser("sync", help="Sync brain: pull, compact, NAV, push.")
 
@@ -226,6 +237,24 @@ def main(argv: list[str] | None = None) -> int:
             skill_id=args.skill_id,
             outcome=args.outcome,
             help_score=args.help_score,
+        )
+        return 0
+
+    if args.command == "create-skill":
+        from . import skill_create as skill_create_mod
+
+        if args.file:
+            body = args.file.read_text(encoding="utf-8")
+        else:
+            body = sys.stdin.read()
+        skill_create_mod.cli_create_skill(
+            backend,
+            args.skill_id,
+            content=body,
+            tags=args.tags,
+            built_from=args.built_from,
+            project=args.project,
+            draft=args.draft,
         )
         return 0
 

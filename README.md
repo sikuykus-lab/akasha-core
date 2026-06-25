@@ -66,6 +66,7 @@ akash sync
 | `akash pull` | Старт сессии: pull + hot-память |
 | `akash session-status` | Недавняя активность агентов |
 | `akash prepare "задача"` | Паутина: подобрать lego-кубики skills под задачу (помощь, не gate) |
+| `akash create-skill <id>` | Новый lego-кубик в brain (stdin или `--file`) |
 | `akash read-skill <id>` | Прочитать SKILL.md из текущего pack |
 | `akash remember "факт"` | Записать факт в буфер сессии |
 | `akash record-outcome <id> success\|failure` | Исход использования skill → usage.jsonl |

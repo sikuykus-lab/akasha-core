@@ -1,16 +1,22 @@
 ---
-description: AKASHA lifecycle — pull, prepare, remember, sync
+description: AKASHA — сначала паутина (помощь, не блокировка)
 alwaysApply: true
 ---
 
-# AKASHA lifecycle (MUST)
+# AKASHA lifecycle
 
-Старт сессии: `python3 -m akash_core.cli pull` (hot-память: persona, rapport, ACTIONS).
+Перед тем как тыкаться в проект вслепую — **сначала паутина**: посмотри, есть ли уже lego-кубики под задачу.
 
-Новая задача: `python3 -m akash_core.cli prepare "<задача>"` → skills **только** через `read-skill` из pack.
+## На каждую новую задачу
 
-В работе: `remember` для фактов; `record-outcome` при использовании skill.
+1. `prepare "<задача>"` — NAV подберёт до 5 skills из brain
+2. `read-skill <id>` — прочитай только совпавшие кубики
+3. **Подходят** → строй из них, быстрее к результату
+4. **Нет / пусто** → с нуля, это нормально
+5. После успеха → `remember`, `record-outcome`, `sync` (новый кубик в паутину)
 
-Конец сессии / stop hook: `python3 -m akash_core.cli sync`.
+Старт сессии: `pull` (sessionStart). Конец: `sync` (stop).
 
-**Запрещено:** читать каталог `skills/` целиком, @ все skills, копировать skills в проект. Источник — только brain через prepare.
+**Не блокировка** — подсказка, чтобы не блуждать. Инструменты всегда доступны.
+
+Skills — только через `prepare` / `read-skill`, не каталог `skills/` целиком.
