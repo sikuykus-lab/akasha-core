@@ -53,6 +53,12 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor", help="Diagnose CLI, config, brain, GitHub.")
     subparsers.add_parser("ensure-cli", help="Install akasha-core if missing; write ~/.akash/cli.json.")
 
+    install_shell = subparsers.add_parser(
+        "install-shell",
+        help="Reinstall Cursor hooks + lifecycle rule from brain (after upgrade).",
+    )
+    install_shell.add_argument("--agent", dest="agent_id", default="cursor")
+
     subparsers.add_parser("init", help="Initialize a new brain repository in the current directory.")
     subparsers.add_parser("migrate", help="Migrate existing brain repository to latest manifest/layout.")
 
@@ -122,6 +128,22 @@ def main(argv: list[str] | None = None) -> int:
             scope=args.scope,
             skip_harvest=args.skip_harvest,
         )
+
+    if args.command == "install-shell":
+        from .adapter import detect_project_root, install_cursor_shell
+
+        cfg = config_mod.load_config()
+        if not cfg.backend:
+            raise SystemExit("AKASHA not configured — run onboard first.")
+        backend = backend_mod.load_backend(cfg)
+        brain_mod.bootstrap_brain(backend, agent_id=args.agent_id)
+        files = install_cursor_shell(
+            brain_path=backend.brain_path,
+            project_root=detect_project_root(),
+            agent_id=args.agent_id,
+        )
+        print("Shell updated:", ", ".join(files))
+        return 0
 
     if args.command == "create-brain":
         from .github_brain import ensure_user_brain_repo

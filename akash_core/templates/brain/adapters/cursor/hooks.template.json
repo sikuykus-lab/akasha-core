@@ -2,7 +2,13 @@
   "version": 1,
   "hooks": {
     "sessionStart": [
-      { "command": "python3 -m akash_core.cli pull" }
+      { "command": ".cursor/hooks/akash-session-start.py" }
+    ],
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/akash-prepare-gate.py",
+        "matcher": "Read|Write|Grep|Shell|StrReplace|Delete|EditNotebook|Task"
+      }
     ],
     "stop": [
       { "command": "python3 -m akash_core.cli sync" }

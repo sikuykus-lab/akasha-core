@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -52,9 +53,13 @@ def cli_prepare(backend, task: str) -> None:
     skill_ids = fit_skills_for_task(brain_path, task, limit=5)
     if not skill_ids:
         scores = _load_nav(brain_path)
-        skill_ids = [s.skill for s in scores[:5]]
+        skill_ids = [s.skill for s in scores[:5] if s.skill]
 
-    pack: dict[str, Any] = {"task": task, "skills": skill_ids}
+    pack: dict[str, Any] = {
+        "task": task,
+        "skills": skill_ids,
+        "prepared_at": datetime.now(timezone.utc).isoformat(),
+    }
     SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
     with SESSION_FILE.open("w", encoding="utf-8") as f:
         json.dump(pack, f, ensure_ascii=False)
@@ -62,9 +67,7 @@ def cli_prepare(backend, task: str) -> None:
 
 
 def cli_read_skill(backend, skill_id: str) -> None:
-    """
-    Вернуть SKILL.md только если он в текущем pack (§7).
-    """
+    """Вернуть SKILL.md только если он в текущем pack (§7)."""
     if not SESSION_FILE.exists():
         raise SystemExit("No active pack; run `akash prepare` first.")
     pack = json.loads(SESSION_FILE.read_text(encoding="utf-8"))
@@ -75,4 +78,3 @@ def cli_read_skill(backend, skill_id: str) -> None:
     if not skill_path.exists():
         raise SystemExit(f"Skill file not found: {skill_path}")
     print(skill_path.read_text(encoding="utf-8"))
-
