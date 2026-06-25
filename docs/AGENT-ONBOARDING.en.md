@@ -10,6 +10,22 @@ When you receive this phrase, **run the full checklist below yourself**. The use
 
 ---
 
+## Clean retest (wipe local install)
+
+Before onboarding from GitHub, remove prior install:
+
+```bash
+rm -rf ~/.akash
+rm -f .cursor/hooks.json .cursor/rules/akasha-lifecycle.mdc
+python3 -m pip uninstall -y akasha-core
+```
+
+Optional: delete `https://github.com/<user>/akash-brain` on GitHub for an empty brain.
+
+Install **only** from GitHub (`pip install git+...`), not `pip install -e` from a local clone.
+
+---
+
 ## Bootstrap checklist (mandatory order)
 
 ### 0. Detect platform

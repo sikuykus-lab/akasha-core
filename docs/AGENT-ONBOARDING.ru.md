@@ -22,6 +22,28 @@
 
 ---
 
+## Ретест с нуля (очистка машины)
+
+Если пользователь просит **полный тест с GitHub** — сначала убери следы прошлой установки:
+
+```bash
+rm -rf ~/.akash
+rm -f .cursor/hooks.json .cursor/rules/akasha-lifecycle.mdc
+python3 -m pip uninstall -y akasha-core
+```
+
+Опционально — **пустой brain**: удалить репозиторий `https://github.com/<user>/akash-brain` на GitHub (Settings → Delete). Onboard создаст его заново.
+
+Устанавливай **только с GitHub**, не из локальной папки на диске:
+
+```bash
+python3 -m pip install --user git+https://github.com/sikuykus-lab/akasha-core.git
+```
+
+Не делай `pip install -e` из клона `akasha-core` на ноутбуке — иначе тест не чистый.
+
+---
+
 ## Чеклист bootstrap (обязательный порядок)
 
 ### 0. Определи платформу
