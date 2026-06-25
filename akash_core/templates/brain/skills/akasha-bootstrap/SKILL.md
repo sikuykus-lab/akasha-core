@@ -30,12 +30,14 @@ python3 -m akash_core.cli doctor
 3. Если onboard уже выполнен — прочитай `adapters/<platform>/bootstrap.md` для проверки.
 4. Финальное сообщение пользователю (укажи URL **созданного** brain).
 
-## MUST после установки
+## После установки — сначала паутина
+
+Перед работой по задаче — **сначала паутина** (помощь, не блокировка):
 
 - `sessionStart` → `python3 -m akash_core.cli pull`
-- новая задача → `akash prepare` → `read-skill` только из pack
-- факты → `akash remember`
-- конец → `akash sync`
+- новая задача → `prepare` → `read-skill` только из pack; нет кубиков — с нуля
+- факты → `remember`; исход skill → `record-outcome`
+- конец → `sync`
 - **не читать** `skills/` целиком
 
 ## Ссылка на полный чеклист агента

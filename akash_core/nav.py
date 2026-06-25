@@ -64,6 +64,20 @@ def cli_prepare(backend, task: str) -> None:
     with SESSION_FILE.open("w", encoding="utf-8") as f:
         json.dump(pack, f, ensure_ascii=False)
     print(json.dumps(pack, ensure_ascii=False))
+    import sys
+
+    if skill_ids:
+        ids = ", ".join(skill_ids)
+        print(
+            f"Паутина: {len(skill_ids)} lego-кубик(ов) — {ids}. "
+            f"read-skill <id> быстрее, чем с нуля. Не подходят — работай как обычно.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            "Паутина пуста по задаче — кубиков нет, можно сразу с нуля.",
+            file=sys.stderr,
+        )
 
 
 def cli_read_skill(backend, skill_id: str) -> None:

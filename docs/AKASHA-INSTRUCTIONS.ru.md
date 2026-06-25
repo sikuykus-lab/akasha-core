@@ -43,6 +43,8 @@ akash adopt --server user@host:~/.akash/brain --agent hermes
 
 ## 5. Жизненный цикл
 
+**Сначала паутина** — `prepare` смотрит, есть ли готовые lego-кубики; не блокирует работу.
+
 ```bash
 akash pull
 akash prepare "описание задачи"

@@ -107,16 +107,19 @@ python3 -m akash_core.cli github-status
 
 ## Контракт после bootstrap (все новые чаты)
 
+**Сначала паутина** — не блокировка, а помощь: не блуждать по проекту, а проверить готовые lego-кубики.
+
 ```
-sessionStart  → akash pull
-новая задача  → akash prepare → read-skill (только из pack)
-работа          → remember, record-outcome  (буфер локально)
-конец           → akash sync                 (merge → git)
+sessionStart  →  akash pull
+новая задача  →  akash prepare "…"  →  read-skill из pack (если совпали)
+работа          →  кубики подходят — строй из них; нет — с нуля
+                →  remember, record-outcome (буфер локально)
+конец           →  akash sync (merge → git)
 ```
 
 Параллельные агенты не блокируются: `remember`/`record-outcome` в буфер, `sync` сливает в brain и пушит. `akash session-status` — кто недавно писал.
 
-**Запрещено:** читать каталог `skills/` целиком, `@`-ить все skills — только через `prepare` / `read-skill`.
+**Не читать** каталог `skills/` целиком — только id из `prepare` / `read-skill`.
 
 ---
 
