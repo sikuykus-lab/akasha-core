@@ -105,7 +105,15 @@ def _load_links(brain_path: Path) -> dict[str, set[str]]:
     return graph
 
 
-def score_cube_for_task(task: str, cube_id: str, meta: dict[str, list[str]], chunk: dict[str, Any]) -> float:
+def score_cube_for_task(
+    task: str,
+    cube_id: str,
+    meta: dict[str, list[str]],
+    chunk: dict[str, Any],
+    *,
+    purpose: str = "",
+    when_tags: list[str] | None = None,
+) -> float:
     task_tokens = _tokenize(task)
     if not task_tokens:
         return 0.0
@@ -113,6 +121,12 @@ def score_cube_for_task(task: str, cube_id: str, meta: dict[str, list[str]], chu
     score = 0.0
     id_tokens = _tokenize(cube_id.replace("-", " "))
     score += len(task_tokens & id_tokens) * 5.0
+
+    if purpose:
+        score += len(task_tokens & _tokenize(purpose)) * 6.0
+
+    for t in when_tags or []:
+        score += len(task_tokens & _tokenize(str(t))) * 4.5
 
     for t in meta.get("triggers") or []:
         score += len(task_tokens & _tokenize(str(t))) * 4.0
@@ -143,6 +157,8 @@ def _load_chunks(brain_path: Path) -> list[dict[str, Any]]:
 
 
 def _rank_cubes(brain_path: Path, task: str) -> list[CubeMeta]:
+    from .capabilities import purpose_for_skill, when_tags_for_skill
+
     ineffective = _load_ineffective(brain_path)
     ranked: list[CubeMeta] = []
 
@@ -152,7 +168,14 @@ def _rank_cubes(brain_path: Path, task: str) -> list[CubeMeta]:
             continue
         content = _skill_md_path(brain_path, cid).read_text(encoding="utf-8", errors="replace")
         meta = parse_skill_md(content)
-        score = score_cube_for_task(task, cid, meta, chunk)
+        score = score_cube_for_task(
+            task,
+            cid,
+            meta,
+            chunk,
+            purpose=purpose_for_skill(brain_path, cid),
+            when_tags=when_tags_for_skill(brain_path, cid),
+        )
         if score < MIN_CUBE_SCORE:
             continue
         ranked.append(

@@ -3,6 +3,9 @@
 tags: akasha, cli, create-skill, lego, brain
 project: akasha-core
 
+## Назначение
+CLI create-skill — сохранить lego-кубик в brain после успешной задачи.
+
 ## Триггеры
 
 - create-skill

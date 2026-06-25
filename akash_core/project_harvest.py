@@ -208,6 +208,9 @@ def synthesize_skill_md(project: ProjectInfo, file_path: Path) -> tuple[str, str
         "Правь точечно; не дублируй логику из других skills в brain (Law II).",
         "После изменений — `remember` + `sync` в AKASHA.",
     ]
+    purpose_line = f"Работа с `{rel}` в `{project.name}`"
+    if funcs:
+        purpose_line += f" — функции: {', '.join(funcs[:4])}"
     if project.readme_excerpt:
         first_line = project.readme_excerpt.splitlines()[0][:120]
         steps.insert(1, f"Контекст проекта: {first_line}")
@@ -223,6 +226,9 @@ def synthesize_skill_md(project: ProjectInfo, file_path: Path) -> tuple[str, str
         f"tags: {', '.join(tags)}",
         f"project: {project.name}",
         f"source: {rel}",
+        "",
+        "## Назначение",
+        purpose_line,
         "",
         "## Триггеры",
         *[f"- {t}" for t in dict.fromkeys(triggers) if t],
@@ -312,5 +318,8 @@ def run_project_synthesis(
 
     if not preview and chunks_for_nav:
         register_chunks(brain_path, chunks_for_nav)
+        from .capabilities import rebuild_from_skills
+
+        rebuild_from_skills(brain_path)
 
     return report

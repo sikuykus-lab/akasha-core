@@ -96,6 +96,10 @@ def _build_parser() -> argparse.ArgumentParser:
     create_skill.add_argument("--project", default="manual", help="Project label in NAV.")
     create_skill.add_argument("--draft", action="store_true", help="Force _drafts/ even if valid.")
 
+    subparsers.add_parser("read-map", help="Capability journal — map of skills, not full SKILL.md bodies.")
+    subparsers.add_parser("read-weave", help="Current weave brief (~/.akash/weave.brief.md).")
+    subparsers.add_parser("token-stats", help="Token economy: all skills vs map+weave+anchor.")
+
     subparsers.add_parser("compact-check", help="Check if hot memory needs compaction.")
     subparsers.add_parser("sync", help="Sync brain: pull, compact, NAV, push.")
 
@@ -256,6 +260,24 @@ def main(argv: list[str] | None = None) -> int:
             project=args.project,
             draft=args.draft,
         )
+        return 0
+
+    if args.command == "read-map":
+        from . import capabilities as cap_mod
+
+        cap_mod.cli_read_map(backend)
+        return 0
+
+    if args.command == "read-weave":
+        from .weave_brief import cli_read_weave
+
+        cli_read_weave()
+        return 0
+
+    if args.command == "token-stats":
+        from . import token_stats as stats_mod
+
+        stats_mod.cli_token_stats(backend)
         return 0
 
     if args.command == "compact-check":

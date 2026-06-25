@@ -78,10 +78,22 @@ def cli_record_outcome(skill_id: str, outcome: str, help_score: int) -> None:
     Буфер usage локально; в brain — append-only при sync.
     """
     agent_id = None
+    situation_tags: list[str] = []
+    pack_id = None
     if SESSION_FILE.exists():
         try:
             session = json.loads(SESSION_FILE.read_text(encoding="utf-8"))
             agent_id = session.get("agent")
+            task = str(session.get("task") or "")
+            if task:
+                import re
+
+                situation_tags = [
+                    w.lower()
+                    for w in re.findall(r"[a-zA-Zа-яА-ЯёЁ0-9]+", task)
+                    if len(w) > 2
+                ][:12]
+            pack_id = session.get("prepared_at")
         except Exception:
             agent_id = None
     if LOCAL_SESSION_FILE.exists():
@@ -95,6 +107,8 @@ def cli_record_outcome(skill_id: str, outcome: str, help_score: int) -> None:
         "outcome": outcome,
         "help_score": help_score,
         "agent": agent_id,
+        "situation_tags": situation_tags,
+        "pack_id": pack_id,
         "ts": datetime.now(timezone.utc).isoformat(),
     }
     pending = Path.home() / ".akash" / "usage_pending.jsonl"

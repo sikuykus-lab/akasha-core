@@ -98,7 +98,11 @@ def init_brain(path: Path) -> None:
 
     ineffective = path / "skills" / "INEFFECTIVE.yaml"
     if not ineffective.exists():
-        ineffective.write_text("# INEFFECTIVE patterns\n", encoding="utf-8")
+        ineffective.write_text("skills: []\n", encoding="utf-8")
+
+    capabilities = path / "skills" / "CAPABILITIES.yaml"
+    if not capabilities.exists():
+        capabilities.write_text("capabilities: []\n", encoding="utf-8")
 
     # Шаблоны skills/adapters из пакета (§3.2, §5, §9) — brain не бывает «пустой ссылкой».
     if TEMPLATES_DIR.exists():

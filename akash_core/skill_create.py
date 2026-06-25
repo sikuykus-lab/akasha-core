@@ -5,8 +5,10 @@ import re
 import sys
 from pathlib import Path
 
+from .capabilities import register_capability
 from .nav_map import register_chunks
-from .skill_laws import validate_skill_md
+from .session import SESSION_FILE
+from .skill_laws import extract_purpose, validate_skill_md
 
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,47}$")
 _TAG_LINE = re.compile(r"^tags:\s*(.+)$", re.MULTILINE | re.IGNORECASE)
@@ -69,9 +71,29 @@ def cli_create_skill(
 
     if not use_draft:
         tag_list = tags or _tags_from_content(content) or [project]
+        purpose = extract_purpose(content)
         register_chunks(
             brain,
             [{"id": sid, "tags": tag_list, "project": project, "paths": []}],
+        )
+        from .nav_weave import parse_skill_md
+
+        meta = parse_skill_md(content)
+        task_ctx = ""
+        if SESSION_FILE.exists():
+            try:
+                pack = json.loads(SESSION_FILE.read_text(encoding="utf-8"))
+                task_ctx = str(pack.get("task") or "")
+            except json.JSONDecodeError:
+                pass
+        register_capability(
+            brain,
+            sid,
+            purpose=purpose,
+            when=(tags or []) + meta.get("triggers", []),
+            entrypoints=meta.get("entrypoints"),
+            project=project,
+            born_from=task_ctx,
         )
 
     print(dest)

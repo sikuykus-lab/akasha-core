@@ -66,6 +66,9 @@ akash sync
 | `akash pull` | Старт сессии: pull + hot-память |
 | `akash session-status` | Недавняя активность агентов |
 | `akash prepare "задача"` | Паутина: weave — наводка как склеить кубики (entrypoints), не 5 готовых ответов |
+| `akash read-map` | Журнал возможностей (карта, без тел skills) |
+| `akash read-weave` | Текущая наводка weave |
+| `akash token-stats` | Оценка экономии токенов vs чтение всех skills |
 | `akash create-skill <id>` | Новый lego-кубик в brain (stdin или `--file`) |
 | `akash read-skill <id>` | Прочитать SKILL.md из текущего pack |
 | `akash remember "факт"` | Записать факт в буфер сессии |

@@ -45,8 +45,6 @@ class HarvestReport:
     skills_skipped: int = 0
     secrets_skipped: int = 0
     binary_skipped: int = 0
-    projects_scanned: int = 0
-    chunks_synthesized: int = 0
     sources: list[str] = field(default_factory=list)
 
 
@@ -274,16 +272,6 @@ def run_harvest(
                 report.actions_entries += 1
                 _append_section(actions_path, path.name, text, rel)
 
-    from .project_harvest import run_project_synthesis
-
-    synth = run_project_synthesis(brain_path, project_root, preview=preview, merge=merge)
-    report.projects_scanned = synth.projects
-    report.chunks_synthesized = synth.chunks_found
-    report.skills_imported += synth.imported
-    report.skills_merged += synth.merged
-    report.skills_drafts += synth.drafts
-    report.skills_skipped += synth.skipped
-
     _print_report(report, preview=preview)
 
     if not preview:
@@ -317,10 +305,8 @@ def _print_report(report: HarvestReport, preview: bool) -> None:
     print(f"Память:      ACTIONS +{report.actions_entries} записей")
     print(
         f"Skills:      {report.skills_imported} импортировано, "
-        f"{report.skills_merged} merged, {report.skills_skipped} пропущено, "
-        f"{report.skills_drafts} в _drafts"
+        f"{report.skills_merged} merged, {report.skills_skipped} пропущено"
     )
-    print(f"Проекты:     {report.projects_scanned} каталогов, {report.chunks_synthesized} lego-кубиков")
     print(f"Секреты:     {report.secrets_skipped} файлов пропущено")
     print(f"Бинарники:   {report.binary_skipped} файлов пропущено")
     print("─" * 22)
