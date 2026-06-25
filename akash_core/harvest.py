@@ -57,6 +57,14 @@ def _is_secret_path(path: Path) -> bool:
 
 def _expand_glob(pattern: str, project_root: Path) -> list[Path]:
     pattern = pattern.strip()
+    expanded = Path(pattern).expanduser()
+
+    # Абсолютный путь без wildcards — не glob (иначе NotImplementedError в pathlib).
+    if expanded.is_absolute() and not any(ch in pattern for ch in "*?[]"):
+        if expanded.is_file() and not _is_secret_path(expanded):
+            return [expanded.resolve()]
+        return []
+
     if pattern.startswith("~/"):
         root = Path.home()
         glob_part = pattern[2:]

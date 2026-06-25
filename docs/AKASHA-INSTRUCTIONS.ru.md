@@ -15,29 +15,36 @@ AKASHA Core — инструкции (RU)
 pip install git+https://github.com/sikuykus-lab/akasha-core.git
 ```
 
-2. Вариант A — brain в private GitHub‑репозитории
--------------------------------------------------
+2. Вариант A — стандартный bootstrap (рекомендуется)
+----------------------------------------------------
 
-1. Создайте или выберите private‑репозиторий с мозгом AKASHA, например:
+1. Выполните `gh auth login` (или настройте SSH к GitHub).
 
-   - `https://github.com/<user>/akash-brain`
+2. Напишите агрегатору **одну фразу**:
 
-2. На машине/в агрегаторе напишите **одну фразу** (GitHub уже подключён):
+   > **Настрой себя по данному проекту GitHub:** `https://github.com/sikuykus-lab/akasha-core`
 
-   > **Настрой себя по данному проекту GitHub:** `https://github.com/<user>/akash-brain`
-
-   ИИ выполнит полный bootstrap по `docs/AGENT-ONBOARDING.ru.md` без ручной настройки.
+   ИИ установит SaaS, **создаст ваш private** `https://github.com/<user>/akash-brain` и выполнит bootstrap.
 
    Альтернатива в терминале:
 
    ```bash
-   akash adopt https://github.com/<user>/akash-brain --agent cursor
+   python3 -m akash_core.cli onboard https://github.com/sikuykus-lab/akasha-core --agent cursor
    ```
 
 3. После bootstrap:
 
-   - `~/.akash/config.local` содержит `backend: github` и `brain_url`.
-   - Локальный клон brain‑репозитория хранится в `~/.akash/github/<owner>/<repo>`.
+   - `~/.akash/config.local` — `backend: github`, `brain_url` указывает на **ваш** brain.
+   - Клон: `~/.akash/github/<your-user>/akash-brain`.
+
+2b. Вариант A2 — brain уже существует
+-------------------------------------
+
+Если private `akash-brain` уже создан на вашем профиле:
+
+```bash
+akash adopt https://github.com/<user>/akash-brain --agent cursor
+```
 
 3. Вариант B — brain на сервере пользователя
 --------------------------------------------

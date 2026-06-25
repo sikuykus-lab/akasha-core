@@ -9,31 +9,36 @@ from . import config as config_mod
 from . import harvest as harvest_mod
 from .adapter import detect_project_root, install_cursor_shell
 from .cli_resolve import ensure_akasha_core_installed
+from .github_brain import initial_push_if_needed, resolve_brain_url
+
+AKASHA_CORE_SAAS = "https://github.com/sikuykus-lab/akasha-core"
 
 
 def cli_onboard(
     *,
-    brain_url: str,
+    brain_url: str | None,
     agent_id: str,
     scope: str = "project",
     project_root: Path | None = None,
     skip_harvest: bool = False,
 ) -> int:
     """
-    Полный bootstrap одной командой (§3.1–§3.2): install → adopt → shell → harvest → sync.
+    Полный bootstrap (§3.1): SaaS akasha-core → private brain на GitHub пользователя → shell → harvest → sync.
     """
     ensure_akasha_core_installed()
     project_root = detect_project_root(project_root)
 
     backend_mod.cli_backend_detect()
 
-    config_mod.configure_github_backend(agent_id=agent_id, brain_url=brain_url)
+    resolved_brain = resolve_brain_url(brain_url)
+    config_mod.configure_github_backend(agent_id=agent_id, brain_url=resolved_brain)
     cfg = config_mod.load_config()
     cfg.scope = scope  # type: ignore[assignment]
     config_mod.write_config(cfg)
 
     backend = backend_mod.load_backend(config_mod.load_config())
     brain_mod.bootstrap_brain(backend, agent_id=agent_id)
+    initial_push_if_needed(backend.brain_path)
 
     shell_files = install_cursor_shell(
         brain_path=backend.brain_path,
@@ -56,7 +61,8 @@ def cli_onboard(
     skill_count = harvest_mod.count_skills(backend.brain_path)
 
     print("\n**Готов к работе. Мы — есть AKASHA.**")
-    print(f"Brain v{manifest.brain_version} · {agent_id} · cli · github · {brain_url}")
+    print(f"Brain v{manifest.brain_version} · {agent_id} · cli · github · {resolved_brain}")
+    print(f"SaaS core: {AKASHA_CORE_SAAS}")
     print(f"Skills: {skill_count}")
     print(f"Scope: {scope}")
     print(f"Clone: {backend.brain_path}")

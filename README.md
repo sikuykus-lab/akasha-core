@@ -15,12 +15,10 @@ AKASHA Core (`akasha-core`)
 
 Если на устройстве подключён GitHub (`gh auth login` или SSH), напишите агрегатору:
 
-> **Настрой себя по данному проекту GitHub:** `https://github.com/sikuykus-lab/akash-brain`
+> **Настрой себя по данному проекту GitHub:** `https://github.com/sikuykus-lab/akasha-core`
 
-ИИ **сам** выполнит bootstrap по `docs/AGENT-ONBOARDING.ru.md`:
-установит `akasha-core`, запустит `python3 -m akash_core.cli onboard <URL>`,
-соберёт hooks/rules (без зависимости от PATH), harvest и sync.
-Вам не нужно вручную настраивать MCP и пути.
+ИИ **сам** установит `akasha-core`, создаст **ваш** private `akash-brain` на GitHub и выполнит bootstrap по `docs/AGENT-ONBOARDING.ru.md`.
+Вам не нужно вручную настраивать MCP, пути и отдельный brain-репозиторий.
 
 Переводы чеклиста для ИИ:
 
@@ -62,8 +60,11 @@ pip install -e .
 ## Быстрый старт
 
 ```bash
-# bootstrap по GitHub brain-репо
-akash adopt https://github.com/user/akash-brain --agent cursor
+# bootstrap: SaaS → ваш private brain
+python3 -m akash_core.cli onboard https://github.com/sikuykus-lab/akasha-core --agent cursor
+
+# или если brain уже есть
+akash adopt https://github.com/<your-user>/akash-brain --agent cursor
 
 # проверить состояние
 akash status

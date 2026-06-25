@@ -47,13 +47,27 @@ class GithubBackend:
     def pull(self) -> None:
         self.ensure_clone()
         subprocess.run(
-            ["git", "pull", "--rebase"],
+            ["git", "pull", "--rebase", "--autostash"],
             check=True,
             cwd=self.brain_path,
         )
 
+    def _commit_if_dirty(self, message: str = "AKASHA sync") -> None:
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=self.brain_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        if not status.stdout.strip():
+            return
+        subprocess.run(["git", "add", "-A"], cwd=self.brain_path, check=True)
+        subprocess.run(["git", "commit", "-m", message], cwd=self.brain_path, check=True)
+
     def push(self) -> None:
         self.ensure_clone()
+        self._commit_if_dirty()
         subprocess.run(
             ["git", "push"],
             check=True,

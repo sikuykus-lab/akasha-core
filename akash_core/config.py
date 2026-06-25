@@ -70,6 +70,13 @@ def configure_github_backend(*, agent_id: str, brain_url: str) -> None:
     """
     Helper used by `akash adopt` в режиме GitHub-backend.
     """
+    from .github_brain import is_akasha_core_url
+
+    if is_akasha_core_url(brain_url):
+        raise SystemExit(
+            f"brain_url не может быть SaaS-репозиторием: {brain_url}\n"
+            "Используйте onboard — он создаст private akash-brain на вашем GitHub."
+        )
     cfg = load_config()
     cfg.backend = "github"
     cfg.brain_url = brain_url

@@ -6,8 +6,15 @@
 
 Пользователь написал одну из фраз:
 
-- «Настрой себя по данному проекту GitHub: `<URL>`»
+- «Настрой себя по данному проекту GitHub: `https://github.com/sikuykus-lab/akasha-core`»
 - «подключи мозг AKASHA» / «настрой AKASHA»
+
+## Два репозитория
+
+- **akasha-core** (публичный SaaS) — установка и документация
+- **akash-brain** (private на GitHub **пользователя**) — память и skills
+
+Не используй чужой private brain. Onboard сам создаст brain на профиле пользователя (`gh auth login` обязателен).
 
 ## Что делать (по порядку)
 
@@ -16,12 +23,12 @@
 
 ```bash
 python3 -m pip install --user --upgrade git+https://github.com/sikuykus-lab/akasha-core.git
-python3 -m akash_core.cli onboard <BRAIN_URL> --agent <agent_id> --scope project
+python3 -m akash_core.cli onboard https://github.com/sikuykus-lab/akasha-core --agent <agent_id> --scope project
 python3 -m akash_core.cli doctor
 ```
 
 3. Если onboard уже выполнен — прочитай `adapters/<platform>/bootstrap.md` для проверки.
-4. Финальное сообщение §3.1.
+4. Финальное сообщение §3.1 (укажи URL **созданного** brain пользователя).
 
 ## MUST после установки
 

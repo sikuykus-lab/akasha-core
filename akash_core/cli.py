@@ -32,12 +32,23 @@ def _build_parser() -> argparse.ArgumentParser:
 
     onboard = subparsers.add_parser(
         "onboard",
-        help="Full auto-bootstrap: install CLI, adopt, shell, harvest, sync (§3.1).",
+        help="Full auto-bootstrap: SaaS install → your private brain → shell → harvest → sync.",
     )
-    onboard.add_argument("brain", help="GitHub URL of private brain repository.")
+    onboard.add_argument(
+        "brain",
+        nargs="?",
+        default=None,
+        help="akasha-core (SaaS) URL, your akash-brain URL, or omit to auto-create private brain.",
+    )
     onboard.add_argument("--agent", dest="agent_id", default="cursor")
     onboard.add_argument("--scope", choices=["project", "user"], default="project")
     onboard.add_argument("--skip-harvest", action="store_true")
+
+    create_brain = subparsers.add_parser(
+        "create-brain",
+        help="Create private akash-brain on the authenticated user's GitHub.",
+    )
+    create_brain.add_argument("--name", default="akash-brain")
 
     subparsers.add_parser("doctor", help="Diagnose CLI, config, brain, GitHub.")
     subparsers.add_parser("ensure-cli", help="Install akasha-core if missing; write ~/.akash/cli.json.")
@@ -111,6 +122,13 @@ def main(argv: list[str] | None = None) -> int:
             scope=args.scope,
             skip_harvest=args.skip_harvest,
         )
+
+    if args.command == "create-brain":
+        from .github_brain import ensure_user_brain_repo
+
+        url = ensure_user_brain_repo(args.name)
+        print(url)
+        return 0
 
     config = config_mod.load_config()
 
