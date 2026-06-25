@@ -22,6 +22,14 @@ SECRET_PATTERNS = [
     r"id_rsa",
 ]
 
+# Расширения, которые harvest никогда не трогает (бинарники, медиа).
+BINARY_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".svg",
+    ".pdf", ".zip", ".gz", ".tar", ".apk", ".dmg", ".exe", ".bin",
+    ".pyc", ".woff", ".woff2", ".ttf", ".eot", ".mp3", ".mp4",
+    ".docx", ".xlsx", ".pptx",
+}
+
 
 @dataclass
 class HarvestReport:
@@ -36,6 +44,7 @@ class HarvestReport:
     skills_drafts: int = 0
     skills_skipped: int = 0
     secrets_skipped: int = 0
+    binary_skipped: int = 0
     sources: list[str] = field(default_factory=list)
 
 
@@ -55,13 +64,59 @@ def _is_secret_path(path: Path) -> bool:
     return any(re.search(pat, name) for pat in SECRET_PATTERNS)
 
 
+def _is_binary_path(path: Path) -> bool:
+    if path.suffix.lower() in BINARY_EXTENSIONS:
+        return True
+    try:
+        chunk = path.read_bytes()[:8192]
+    except OSError:
+        return True
+    if not chunk:
+        return False
+    if b"\x00" in chunk:
+        return True
+    try:
+        chunk.decode("utf-8")
+        return False
+    except UnicodeDecodeError:
+        return True
+
+
+def _read_text(path: Path) -> str | None:
+    """UTF-8 текст; None если файл бинарный или не читается."""
+    if _is_binary_path(path):
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def _read_text_lenient(path: Path) -> str:
+    """Читает target brain-файл; битые байты заменяет (после сбойного harvest)."""
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _heal_brain_target(path: Path) -> None:
+    """Перезаписать brain-файл в валидный UTF-8 после частично сбойного harvest."""
+    if not path.exists():
+        return
+    text = _read_text_lenient(path).lstrip("\ufffd").strip()
+    if text:
+        path.write_text(text + "\n", encoding="utf-8")
+    else:
+        path.write_text("", encoding="utf-8")
+
+
 def _expand_glob(pattern: str, project_root: Path) -> list[Path]:
     pattern = pattern.strip()
     expanded = Path(pattern).expanduser()
 
     # Абсолютный путь без wildcards — не glob (иначе NotImplementedError в pathlib).
     if expanded.is_absolute() and not any(ch in pattern for ch in "*?[]"):
-        if expanded.is_file() and not _is_secret_path(expanded):
+        if expanded.is_file() and not _is_secret_path(expanded) and not _is_binary_path(expanded):
             return [expanded.resolve()]
         return []
 
@@ -76,7 +131,7 @@ def _expand_glob(pattern: str, project_root: Path) -> list[Path]:
         glob_part = pattern
     found: list[Path] = []
     for p in root.glob(glob_part):
-        if p.is_file() and not _is_secret_path(p):
+        if p.is_file() and not _is_secret_path(p) and not _is_binary_path(p):
             found.append(p.resolve())
     return found
 
@@ -106,7 +161,7 @@ def _iter_harvest_files(brain_path: Path, platform: str, project_root: Path) -> 
         if "/" not in pattern and not pattern.startswith("~") and not pattern.startswith("**"):
             for base in (project_root, Path.home(), project_root.parent):
                 candidate = base / pattern
-                if candidate.is_file() and not _is_secret_path(candidate):
+                if candidate.is_file() and not _is_secret_path(candidate) and not _is_binary_path(candidate):
                     seen.add(candidate.resolve())
             continue
         for p in _expand_glob(pattern, project_root):
@@ -132,7 +187,7 @@ def _classify(path: Path) -> str:
 def _append_section(target: Path, header: str, content: str, source: str) -> int:
     target.parent.mkdir(parents=True, exist_ok=True)
     block = f"\n\n## {header}\n[harvest:{source}]\n\n{content.strip()}\n"
-    existing = target.read_text(encoding="utf-8") if target.exists() else ""
+    existing = _read_text_lenient(target)
     if source in existing:
         return 0
     target.write_text(existing + block, encoding="utf-8")
@@ -146,11 +201,13 @@ def _skill_id_from_path(path: Path) -> str:
 
 
 def _import_skill(brain_path: Path, path: Path, merge: bool) -> str:
+    fragment = _read_text(path)
+    if fragment is None:
+        return "skipped"
     skill_id = _skill_id_from_path(path)
     dest = brain_path / "skills" / skill_id / "SKILL.md"
     if dest.exists() and merge:
-        existing = dest.read_text(encoding="utf-8")
-        fragment = path.read_text(encoding="utf-8")
+        existing = _read_text_lenient(dest)
         if fragment.strip() in existing:
             return "skipped"
         dest.write_text(existing + f"\n\n[harvest-merge:{path}]\n\n{fragment}", encoding="utf-8")
@@ -158,7 +215,7 @@ def _import_skill(brain_path: Path, path: Path, merge: bool) -> str:
     if dest.exists():
         return "skipped"
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    dest.write_text(fragment, encoding="utf-8")
     return "imported"
 
 
@@ -175,27 +232,30 @@ def run_harvest(
     platform = cfg.agent_id or "cursor"
     report = HarvestReport(agent=platform, platform=platform)
 
+    persona_path = brain_path / "core" / "persona.md"
+    rapport_path = brain_path / "core" / "rapport.md"
+    actions_path = brain_path / "memory" / "ACTIONS.md"
+    if not preview:
+        for target in (persona_path, rapport_path, actions_path):
+            _heal_brain_target(target)
+
     files = _iter_harvest_files(brain_path, platform, project_root)
     report.scanned = len(files)
     report.sources = [str(f) for f in files[:50]]
 
-    persona_path = brain_path / "core" / "persona.md"
-    rapport_path = brain_path / "core" / "rapport.md"
-    actions_path = brain_path / "memory" / "ACTIONS.md"
-
     for path in files:
         kind = _classify(path)
         rel = str(path)
+        text = _read_text(path)
+        if text is None:
+            report.binary_skipped += 1
+            continue
         if kind == "persona":
             if not preview:
-                report.persona_bytes += _append_section(
-                    persona_path, path.name, path.read_text(encoding="utf-8", errors="replace"), rel
-                )
+                report.persona_bytes += _append_section(persona_path, path.name, text, rel)
         elif kind == "rapport":
             if not preview:
-                report.rapport_bytes += _append_section(
-                    rapport_path, path.name, path.read_text(encoding="utf-8", errors="replace"), rel
-                )
+                report.rapport_bytes += _append_section(rapport_path, path.name, text, rel)
         elif kind == "skill":
             if preview:
                 report.skills_imported += 1
@@ -210,9 +270,7 @@ def run_harvest(
         else:
             if not preview:
                 report.actions_entries += 1
-                _append_section(
-                    actions_path, path.name, path.read_text(encoding="utf-8", errors="replace"), rel
-                )
+                _append_section(actions_path, path.name, text, rel)
 
     _print_report(report, preview=preview)
 
@@ -250,6 +308,7 @@ def _print_report(report: HarvestReport, preview: bool) -> None:
         f"{report.skills_merged} merged, {report.skills_skipped} пропущено"
     )
     print(f"Секреты:     {report.secrets_skipped} файлов пропущено")
+    print(f"Бинарники:   {report.binary_skipped} файлов пропущено")
     print("─" * 22)
     if preview:
         print("Записать в brain и sync? [да / нет / только skills / только профиль]")

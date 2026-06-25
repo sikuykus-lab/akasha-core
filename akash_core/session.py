@@ -43,10 +43,11 @@ def compact_hot_memory(brain_path: Path) -> None:
         content = p.read_text(encoding="utf-8")
         if len(content.encode("utf-8")) <= limit * 0.8:
             continue
-        # Сжимаем: оставляем хвост последнего лимита байт.
-        data = content.encode("utf-8")
-        trimmed = data[-limit:]
-        p.write_bytes(trimmed)
+        # Сжимаем: хвост по строкам, чтобы не резать UTF-8 посередине символа.
+        lines = content.splitlines(keepends=True)
+        while lines and len("".join(lines).encode("utf-8")) > limit:
+            lines.pop(0)
+        p.write_text("".join(lines), encoding="utf-8")
 
 
 def cli_compact_check(brain_path: Path) -> None:

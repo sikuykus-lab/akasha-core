@@ -21,7 +21,7 @@ def test_count_skills_empty(tmp_path):
 
 
 def test_expand_glob_absolute_path(tmp_path):
-    from akash_core.harvest import _expand_glob, _iter_harvest_files
+    from akash_core.harvest import _expand_glob
 
     f = tmp_path / "SOUL.md"
     f.write_text("soul", encoding="utf-8")
@@ -37,3 +37,29 @@ def test_iter_harvest_no_glob_crash(tmp_path):
     (brain / "adapters" / "cursor" / "harvest-sources.yaml").write_text("globs: []\n")
     files = _iter_harvest_files(brain, "cursor", tmp_path)
     assert isinstance(files, list)
+
+
+def test_is_binary_path(tmp_path):
+    from akash_core.harvest import _is_binary_path, _read_text
+
+    binary = tmp_path / "x.bin"
+    binary.write_bytes(b"\x00\x01\x02")
+    assert _is_binary_path(binary)
+    assert _read_text(binary) is None
+
+    text = tmp_path / "ok.md"
+    text.write_text("hello", encoding="utf-8")
+    assert not _is_binary_path(text)
+    assert _read_text(text) == "hello"
+
+
+def test_heal_brain_target_bad_utf8(tmp_path):
+    from akash_core.harvest import _heal_brain_target, _read_text_lenient
+
+    bad = tmp_path / "rapport.md"
+    bad.write_bytes(b"\xbd\xd1\x8e.\n# Rapport\nok")
+    assert _read_text_lenient(bad).startswith("\ufffd")
+    _heal_brain_target(bad)
+    healed = bad.read_text(encoding="utf-8")
+    assert "# Rapport" in healed
+    assert "\ufffd" not in healed
