@@ -11,6 +11,12 @@ AKASHA Core (`akasha-core`)
 
 - `AKASHA-TZ v1.8` (копия в рабочем репозитории пользователя, например `Google Sheets/akash/AKASHA-TZ.md`).
 
+Переводы README:
+
+- `README.en.md` — английская версия;
+- `README.es.md` — испанская версия;
+- `README.zh.md` — китайская версия.
+
 ## Правовой статус и SaaS
 
 Проект `akasha-core` является проприетарным ядром AKASHA и распространяется **не** как open-source.
