@@ -18,9 +18,9 @@ TOKEN_ALIASES: dict[str, set[str]] = {
     "браузерную": {"browser", "web", "html"},
     "браузерная": {"browser", "web", "html"},
     "страница": {"page", "html", "web", "site"},
-    "страницу": {"page", "html", "web", "site"},
-    "страницы": {"page", "html", "web", "site"},
-    "localhost": {"localhost", "local", "streamlit", "http", "server"},
+    "страницу": {"page", "html", "web", "site", "streamlit", "dataroom"},
+    "страницы": {"page", "html", "web", "site", "streamlit", "dataroom"},
+    "localhost": {"localhost", "local", "streamlit", "http"},
     "локальный": {"localhost", "local"},
     "локальную": {"localhost", "local"},
     "локальном": {"localhost", "local"},
@@ -37,10 +37,6 @@ TOKEN_ALIASES: dict[str, set[str]] = {
     "скрипт": {"script", "apps", "gas"},
     "игр": {"game", "preview"},
     "простую": {"simple", "minimal"},
-    "напиши": {"create", "write", "build"},
-    "сделай": {"create", "build", "make"},
-    "сделать": {"create", "build", "make"},
-    "напиши": {"write", "html", "page"},
 }
 
 

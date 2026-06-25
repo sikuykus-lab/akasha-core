@@ -188,6 +188,21 @@ def score_cube_for_task(
     proj = str(chunk.get("project") or "")
     score += len(task_tokens & _tokenize(proj)) * 2.0
 
+    # Сильные доменные совпадения id
+    if task_tokens & id_tokens:
+        score += 4.0
+    if "game" in task_tokens and "game" in id_tokens:
+        score += 12.0
+    if ("page" in task_tokens or "html" in task_tokens) and any(
+        x in id_tokens for x in ("dataroom", "html", "streamlit", "site", "page")
+    ):
+        score += 10.0
+    if "create" in id_tokens and "skill" in id_tokens and "akasha" not in task_tokens:
+        score -= 8.0
+    if "refresh" in id_tokens and "server" in id_tokens and "powerbi" in cube_id:
+        if "powerbi" not in task_tokens and "bi" not in task_tokens:
+            score -= 10.0
+
     return score
 
 
