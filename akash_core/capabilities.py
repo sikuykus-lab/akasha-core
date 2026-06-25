@@ -106,9 +106,13 @@ def rebuild_from_skills(brain_path: Path) -> int:
             continue
         content = md.read_text(encoding="utf-8", errors="replace")
         purpose = extract_purpose(content)
-        if not purpose:
-            continue
         meta = parse_skill_md(content)
+        if not purpose:
+            triggers = meta.get("triggers") or []
+            purpose = (
+                f"Кубик `{sid}`"
+                + (f" — {triggers[0]}" if triggers else "")
+            )[:240]
         register_capability(
             brain_path,
             sid,
